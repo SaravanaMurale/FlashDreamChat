@@ -1,0 +1,543 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/chat_bg_inner"
+    android:orientation="vertical"
+    android:weightSum="2">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="0.35">
+
+        <ImageView
+            android:id="@+id/back"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="@dimen/_10sdp"
+            android:src="@drawable/ic_back" />
+
+        <TextView
+            android:id="@+id/title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:layout_marginStart="13dp"
+            android:layout_toEndOf="@+id/back"
+            android:text="Settings"
+            android:textColor="@android:color/white" />
+
+        <ImageView
+            android:id="@+id/done"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="@dimen/_15sdp"
+            android:padding="5dp"
+            android:visibility="gone"
+            android:src="@drawable/ic_done_white" />
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1.6">
+
+        <RelativeLayout
+            android:id="@+id/layout"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_above="@id/tv_version">
+
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <RelativeLayout
+                        android:id="@+id/imageLayout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:padding="8dp">
+
+                        <RelativeLayout
+                            android:id="@+id/userImage_RLY"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp">
+
+                            <de.hdodenhof.circleimageview.CircleImageView
+                                android:id="@+id/userImage"
+                                android:layout_width="56dp"
+                                android:layout_height="56dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/ic_avatar" />
+
+                            <ProgressBar
+                                android:id="@+id/progressBar"
+                                android:layout_width="@dimen/_15sdp"
+                                android:layout_height="@dimen/_15sdp"
+                                android:layout_centerInParent="true"
+                                android:layout_centerVertical="true"
+                                android:layout_gravity="center"
+                                android:visibility="gone" />
+                        </RelativeLayout>
+
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_vertical"
+                            android:layout_marginStart="12dp"
+                            android:layout_marginLeft="12dp"
+                            android:layout_toEndOf="@+id/userImage_RLY"
+                            android:layout_toRightOf="@+id/userImage_RLY"
+                            android:focusable="true"
+                            android:focusableInTouchMode="true"
+                            android:orientation="vertical">
+
+                            <EditText
+                                android:id="@+id/userName"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:background="@null"
+                                android:editable="false"
+                                android:ellipsize="end"
+                                android:hint="your name"
+                                android:imeOptions="actionDone"
+                                android:inputType="none"
+                                android:maxLines="1"
+                                android:padding="2dp"
+                                android:singleLine="true"
+                                android:text="a_man"
+                                android:textColor="@android:color/black"
+                                android:textColorHint="@android:color/white"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/userStatus"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:background="@null"
+                                android:ellipsize="end"
+                                android:maxLength="130"
+                                android:padding="2dp"
+                                android:textColor="@android:color/black"
+                                android:textColorHint="@android:color/black"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+
+                    </RelativeLayout>
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="55dp"
+                        android:layout_marginTop="@dimen/_8sdp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/wallpaper"
+                            android:layout_width="match_parent"
+                            android:layout_height="55dp"
+                            android:layout_marginStart="@dimen/_10sdp"
+                            android:background="@drawable/settings_item_border"
+                            android:drawablePadding="16dp"
+                            android:gravity="start|center"
+                            android:paddingStart="@dimen/_40sdp"
+                            android:paddingEnd="4dp"
+                            android:text="@string/wallpaper"
+                            android:textColor="@color/textColor4"
+                            android:textSize="16sp" />
+
+                        <RelativeLayout
+                            android:layout_width="45dp"
+                            android:layout_height="45dp"
+                            android:layout_alignParentStart="true"
+                            android:layout_centerInParent="true">
+
+                            <com.hermes.chat.status.CircleView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:layout_alignParentStart="true"
+                                android:layout_centerInParent="true"
+                                android:src="@color/colorPrimary" />
+
+                            <ImageView
+                                android:layout_width="26dp"
+                                android:layout_height="26dp"
+                                android:layout_centerInParent="true"
+                                android:src="@drawable/ic_baseline_image_24" />
+
+                        </RelativeLayout>
+                    </RelativeLayout>
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="55dp"
+                        android:layout_marginTop="@dimen/_10sdp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/changePassword"
+                            android:layout_width="match_parent"
+                            android:layout_height="55dp"
+                            android:layout_marginStart="@dimen/_10sdp"
+                            android:background="@drawable/settings_item_border"
+                            android:drawablePadding="16dp"
+                            android:gravity="start|center"
+                            android:paddingLeft="@dimen/_40sdp"
+                            android:paddingRight="4dp"
+                            android:text="@string/change_password"
+                            android:textColor="@color/textColor4"
+                            android:textSize="16sp" />
+
+                        <RelativeLayout
+                            android:layout_width="45dp"
+                            android:layout_height="45dp"
+                            android:layout_alignParentStart="true"
+                            android:layout_centerInParent="true">
+
+                            <com.hermes.chat.status.CircleView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:layout_alignParentStart="true"
+                                android:layout_centerInParent="true"
+                                android:src="@color/colorPrimary" />
+
+                            <ImageView
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:layout_centerInParent="true"
+                                android:src="@drawable/ic_change_password"
+                                android:tint="@android:color/white" />
+
+                        </RelativeLayout>
+                    </RelativeLayout>
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="55dp"
+                        android:layout_marginTop="@dimen/_10sdp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/changeLanguage"
+                            android:layout_width="match_parent"
+                            android:layout_height="55dp"
+                            android:layout_marginStart="@dimen/_10sdp"
+                            android:background="@drawable/settings_item_border"
+                            android:drawablePadding="16dp"
+                            android:gravity="start|center"
+                            android:paddingStart="@dimen/_40sdp"
+                            android:paddingEnd="4dp"
+                            android:text="Change Language"
+                            android:textColor="@color/textColor4"
+                            android:textSize="16sp" />
+
+                        <RelativeLayout
+                            android:layout_width="45dp"
+                            android:layout_height="45dp"
+                            android:layout_alignParentStart="true"
+                            android:layout_centerInParent="true">
+
+                            <com.hermes.chat.status.CircleView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:layout_alignParentStart="true"
+                                android:layout_centerInParent="true"
+                                android:src="@color/colorPrimary" />
+
+                            <ImageView
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:layout_centerInParent="true"
+                                android:src="@drawable/ic_translate"
+                                android:tint="@android:color/white" />
+
+                        </RelativeLayout>
+                    </RelativeLayout>
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="55dp"
+                        android:layout_marginTop="@dimen/_10sdp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/share"
+                            android:layout_width="match_parent"
+                            android:layout_height="55dp"
+                            android:layout_marginStart="@dimen/_10sdp"
+                            android:background="@drawable/settings_item_border"
+                            android:drawablePadding="16dp"
+                            android:gravity="start|center"
+                            android:paddingLeft="@dimen/_40sdp"
+                            android:paddingRight="4dp"
+                            android:text="Share app"
+                            android:textColor="@color/textColor4"
+                            android:textSize="16sp" />
+
+                        <RelativeLayout
+                            android:layout_width="45dp"
+                            android:layout_height="45dp"
+                            android:layout_alignParentStart="true"
+                            android:layout_centerInParent="true">
+
+                            <com.hermes.chat.status.CircleView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:layout_alignParentStart="true"
+                                android:layout_centerInParent="true"
+                                android:src="@color/colorPrimary" />
+
+                            <ImageView
+                                android:layout_width="26dp"
+                                android:layout_height="26dp"
+                                android:layout_centerInParent="true"
+                                android:src="@drawable/ic_baseline_share_24"
+                                android:tint="@android:color/white" />
+
+                        </RelativeLayout>
+                    </RelativeLayout>
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="55dp"
+                        android:layout_marginTop="@dimen/_10sdp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/rate"
+                            android:layout_width="match_parent"
+                            android:layout_height="55dp"
+                            android:layout_marginStart="@dimen/_10sdp"
+                            android:background="@drawable/settings_item_border"
+                            android:drawablePadding="16dp"
+                            android:gravity="start|center"
+                            android:paddingLeft="@dimen/_40sdp"
+                            android:paddingRight="4dp"
+                            android:text="Rate app"
+                            android:textColor="@color/textColor4"
+                            android:textSize="16sp" />
+
+                        <RelativeLayout
+                            android:layout_width="45dp"
+                            android:layout_height="45dp"
+                            android:layout_alignParentStart="true"
+                            android:layout_centerInParent="true">
+
+                            <com.hermes.chat.status.CircleView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:layout_alignParentStart="true"
+                                android:layout_centerInParent="true"
+                                android:src="@color/colorPrimary" />
+
+                            <ImageView
+                                android:layout_width="26dp"
+                                android:layout_height="26dp"
+                                android:layout_centerInParent="true"
+                                android:src="@drawable/ic_baseline_thumb_up_24"
+                                android:tint="@android:color/white" />
+
+                        </RelativeLayout>
+                    </RelativeLayout>
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="55dp"
+                        android:layout_marginTop="@dimen/_10sdp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/privacy"
+                            android:layout_width="match_parent"
+                            android:layout_height="55dp"
+                            android:layout_marginStart="@dimen/_10sdp"
+                            android:background="@drawable/settings_item_border"
+                            android:drawablePadding="16dp"
+                            android:gravity="start|center"
+                            android:paddingLeft="@dimen/_40sdp"
+                            android:paddingRight="4dp"
+                            android:text="Privacy policy"
+                            android:textColor="@color/textColor4"
+                            android:textSize="16sp" />
+
+                        <RelativeLayout
+                            android:layout_width="45dp"
+                            android:layout_height="45dp"
+                            android:layout_alignParentStart="true"
+                            android:layout_centerInParent="true">
+
+                            <com.hermes.chat.status.CircleView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:layout_alignParentStart="true"
+                                android:layout_centerInParent="true"
+                                android:src="@color/colorPrimary" />
+
+                            <ImageView
+                                android:layout_width="26dp"
+                                android:layout_height="26dp"
+                                android:layout_centerInParent="true"
+                                android:src="@drawable/ic_baseline_policy_24"
+                                android:tint="@android:color/white" />
+
+                        </RelativeLayout>
+                    </RelativeLayout>
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="55dp"
+                        android:layout_marginTop="@dimen/_10sdp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/invite_friends"
+                            android:layout_width="match_parent"
+                            android:layout_height="55dp"
+                            android:layout_marginStart="@dimen/_10sdp"
+                            android:background="@drawable/settings_item_border"
+                            android:drawablePadding="16dp"
+                            android:gravity="start|center"
+                            android:paddingLeft="@dimen/_40sdp"
+                            android:paddingRight="4dp"
+                            android:text="Invite Friends"
+                            android:textColor="@color/textColor4"
+                            android:textSize="16sp" />
+
+                        <RelativeLayout
+                            android:layout_width="45dp"
+                            android:layout_height="45dp"
+                            android:layout_alignParentStart="true"
+                            android:layout_centerInParent="true">
+
+                            <com.hermes.chat.status.CircleView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:layout_alignParentStart="true"
+                                android:layout_centerInParent="true"
+                                android:src="@color/colorPrimary" />
+
+                            <ImageView
+                                android:layout_width="26dp"
+                                android:layout_height="26dp"
+                                android:layout_centerInParent="true"
+                                android:src="@drawable/ic_baseline_group_24"
+                                android:tint="@android:color/white" />
+
+                        </RelativeLayout>
+                    </RelativeLayout>
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="55dp"
+                        android:layout_marginTop="@dimen/_10sdp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/contact"
+                            android:layout_width="match_parent"
+                            android:layout_height="55dp"
+                            android:layout_marginStart="@dimen/_10sdp"
+                            android:background="@drawable/settings_item_border"
+                            android:drawablePadding="16dp"
+                            android:gravity="start|center"
+                            android:paddingLeft="@dimen/_40sdp"
+                            android:paddingRight="4dp"
+                            android:text="Contact us"
+                            android:textColor="@color/textColor4"
+                            android:textSize="16sp" />
+
+                        <RelativeLayout
+                            android:layout_width="45dp"
+                            android:layout_height="45dp"
+                            android:layout_alignParentStart="true"
+                            android:layout_centerInParent="true">
+
+                            <com.hermes.chat.status.CircleView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:layout_alignParentStart="true"
+                                android:layout_centerInParent="true"
+                                android:src="@color/colorPrimary" />
+
+                            <ImageView
+                                android:layout_width="26dp"
+                                android:layout_height="26dp"
+                                android:layout_centerInParent="true"
+                                android:src="@drawable/ic_baseline_email_24"
+                                android:tint="@android:color/white" />
+
+                        </RelativeLayout>
+                    </RelativeLayout>
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="55dp"
+                        android:layout_marginTop="@dimen/_10sdp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/logout"
+                            android:layout_width="match_parent"
+                            android:layout_height="55dp"
+                            android:layout_marginStart="@dimen/_10sdp"
+                            android:background="@drawable/settings_item_border"
+                            android:drawablePadding="16dp"
+                            android:gravity="start|center"
+                            android:paddingLeft="@dimen/_40sdp"
+                            android:paddingRight="4dp"
+                            android:text="Logout"
+                            android:textColor="@color/textColor4"
+                            android:textSize="16sp" />
+
+                        <RelativeLayout
+                            android:layout_width="45dp"
+                            android:layout_height="45dp"
+                            android:layout_alignParentStart="true"
+                            android:layout_centerInParent="true">
+
+                            <com.hermes.chat.status.CircleView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:layout_alignParentStart="true"
+                                android:layout_centerInParent="true"
+                                android:src="@color/colorPrimary" />
+
+                            <ImageView
+                                android:layout_width="26dp"
+                                android:layout_height="26dp"
+                                android:layout_centerInParent="true"
+                                android:src="@drawable/ic_logout"
+                                android:tint="@android:color/white" />
+                        </RelativeLayout>
+
+                    </RelativeLayout>
+                </LinearLayout>
+            </ScrollView>
+        </RelativeLayout>
+
+        <TextView
+            android:id="@+id/tv_version"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:background="@android:color/white"
+            android:gravity="center"
+            android:padding="@dimen/_7sdp"
+            android:textColor="@color/textColor4" />
+    </RelativeLayout>
+</LinearLayout>

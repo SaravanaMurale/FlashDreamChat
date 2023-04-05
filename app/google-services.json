@@ -1,0 +1,211 @@
+{
+  "project_info": {
+    "project_number": "1063314122046",
+    "firebase_url": "https://dreamschat.firebaseio.com",
+    "project_id": "dreamschat",
+    "storage_bucket": "dreamschat.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1063314122046:android:b8f9c5e06d8ad8d1e5f86f",
+        "android_client_info": {
+          "package_name": "com.dreamguys.dreamschat"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1063314122046-8qdpa9hcv197ipg0v78t9p2ine5883mj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dreamguys.dreamschat",
+            "certificate_hash": "4fb3f1d3ca04246f713aa47009f61f9e1ea1d7a6"
+          }
+        },
+        {
+          "client_id": "1063314122046-fss4hju9omdeaddjeumr5lbqmros89f0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dreamguys.dreamschat",
+            "certificate_hash": "d09d4d91d8528b669a8779c23aefb3203d0dda35"
+          }
+        },
+        {
+          "client_id": "1063314122046-i5pe8gv6p0imu42rmih0o8o9ila0hba6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dreamguys.dreamschat",
+            "certificate_hash": "fc5d45a7c9b21ce8fad8bc9566fb132ba269ff37"
+          }
+        },
+        {
+          "client_id": "1063314122046-pi1613a51rcf9068v47bvp5ajhja3io7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dreamguys.dreamschat",
+            "certificate_hash": "8a0a60f04be9b7e9810c3b00dad7b8fe90ff61a2"
+          }
+        },
+        {
+          "client_id": "1063314122046-tssg7esgoeot7j86fbn7s3ij4uifo18k.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dreamguys.dreamschat",
+            "certificate_hash": "60c0315db09a951f405ae2d6830b9e54d5d373a1"
+          }
+        },
+        {
+          "client_id": "1063314122046-7h564f3dik0llofgi1ihnr369cgbb49o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDUL0dp2Hg2_nDS4pVaxdZ5vvILFiSW6Wo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1063314122046-7h564f3dik0llofgi1ihnr369cgbb49o.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1063314122046-hn82t6r7nksmmg331u5ifh8ra744285k.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.dreamguystech.DreamsChat.NotificationService"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1063314122046:android:6e61077b97d1b83e",
+        "android_client_info": {
+          "package_name": "com.dreams.chat"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1063314122046-18c3b2vnst7uql4j7e9nbjv7n28q9785.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dreams.chat",
+            "certificate_hash": "12b8ebadfd97873e01f3e4ceda44241af5bc4187"
+          }
+        },
+        {
+          "client_id": "1063314122046-2kmkjs3053f0bej3kfcqtbr7j89m0s3c.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dreams.chat",
+            "certificate_hash": "7b56caef17159ec8f7aac9a37da50035012e5b70"
+          }
+        },
+        {
+          "client_id": "1063314122046-939h50bvdk76aei5t0lgvadbdamel1md.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dreams.chat",
+            "certificate_hash": "2fff539a29b7d5264892aa7912bf210f4263b0f4"
+          }
+        },
+        {
+          "client_id": "1063314122046-9k5ibkqkpkoc199rr478jmcuutdvbgjn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dreams.chat",
+            "certificate_hash": "5204077d0b2acf20d844e99edfed82f6680b1439"
+          }
+        },
+        {
+          "client_id": "1063314122046-ccf0fohfip20jibhmd3p58hqvubv6gi8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dreams.chat",
+            "certificate_hash": "2d87fdb017f644b3361881016cae0c0b08ae50a5"
+          }
+        },
+        {
+          "client_id": "1063314122046-fec4o0a1pccl1pupadnpcriq6flrfdq8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dreams.chat",
+            "certificate_hash": "9a3fd23c8ee4a7f4b7f5d939d983dc0fd5183082"
+          }
+        },
+        {
+          "client_id": "1063314122046-fh0kod5hct10p1gv0luu28a04lia89hu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dreams.chat",
+            "certificate_hash": "8a0a60f04be9b7e9810c3b00dad7b8fe90ff61a2"
+          }
+        },
+        {
+          "client_id": "1063314122046-k2g1di1njdufped6kqqth8pjj28t8r78.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dreams.chat",
+            "certificate_hash": "7b212202716d2aadee416dfd98593de440a4baaa"
+          }
+        },
+        {
+          "client_id": "1063314122046-mve3173rlb93m6mkmbh9h2mdmtscd287.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dreams.chat",
+            "certificate_hash": "48fd80bed57e2b3012e4b19101d10b1a1f27af9b"
+          }
+        },
+        {
+          "client_id": "1063314122046-rbfmifr19e67ikbomilhehovjcsk7kom.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dreams.chat",
+            "certificate_hash": "5e6c6bc512a72125bdecfed7c8b5dd60cc6f2fed"
+          }
+        },
+        {
+          "client_id": "1063314122046-u26sehdf44jp5hvu6jk2s17nc2i85p39.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dreams.chat",
+            "certificate_hash": "8bbc16a7fa809fc43b23576e749c6a33983f906c"
+          }
+        },
+        {
+          "client_id": "1063314122046-7h564f3dik0llofgi1ihnr369cgbb49o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDUL0dp2Hg2_nDS4pVaxdZ5vvILFiSW6Wo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1063314122046-7h564f3dik0llofgi1ihnr369cgbb49o.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1063314122046-hn82t6r7nksmmg331u5ifh8ra744285k.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.dreamguystech.DreamsChat.NotificationService"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

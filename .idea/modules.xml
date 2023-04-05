@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/New_DreamChat.iml" filepath="$PROJECT_DIR$/.idea/modules/New_DreamChat.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/New_DreamChat.app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/New_DreamChat.app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/New_DreamChat.app.androidTest.iml" filepath="$PROJECT_DIR$/.idea/modules/app/New_DreamChat.app.androidTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/New_DreamChat.app.main.iml" filepath="$PROJECT_DIR$/.idea/modules/app/New_DreamChat.app.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/New_DreamChat.app.unitTest.iml" filepath="$PROJECT_DIR$/.idea/modules/app/New_DreamChat.app.unitTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/statusstories/New_DreamChat.statusstories.iml" filepath="$PROJECT_DIR$/.idea/modules/statusstories/New_DreamChat.statusstories.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/statusstories/New_DreamChat.statusstories.androidTest.iml" filepath="$PROJECT_DIR$/.idea/modules/statusstories/New_DreamChat.statusstories.androidTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/statusstories/New_DreamChat.statusstories.main.iml" filepath="$PROJECT_DIR$/.idea/modules/statusstories/New_DreamChat.statusstories.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/statusstories/New_DreamChat.statusstories.unitTest.iml" filepath="$PROJECT_DIR$/.idea/modules/statusstories/New_DreamChat.statusstories.unitTest.iml" />
+    </modules>
+  </component>
+</project>
