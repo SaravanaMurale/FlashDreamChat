@@ -1769,12 +1769,14 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
     }
 
     void openContactPicker() {
+
         if (permissionsAvailable(permissionsContact)) {
             Intent contactPickerIntent = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
             startActivityForResult(contactPickerIntent, REQUEST_CODE_CONTACT);
         } else {
             ActivityCompat.requestPermissions(this, permissionsContact, 14);
         }
+
     }
 
     void openAudioPicker() {

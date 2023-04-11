@@ -43,11 +43,13 @@ public class User implements Parcelable, RealmModel {
 
     public RealmList<solochat> solochat = new RealmList<>();
     private RealmList<String> blockedUsersIds = new RealmList<>();
+    private RealmList<String> connectList = new RealmList<>();
     private String deviceToken = " ";
     private String osType = " ";
     private String username = "";
     private String password = "";
     private String email = "";
+    private int is_new;
 
 
     @Ignore
@@ -57,6 +59,8 @@ public class User implements Parcelable, RealmModel {
 
     public User() {
     }
+
+
 
     protected User(Parcel in) {
         online = in.readByte() != 0;
@@ -70,9 +74,13 @@ public class User implements Parcelable, RealmModel {
         image = in.readString();
         wallpaper = in.readString();
         timestamp = in.readLong();
+        is_new = in.readInt();
         ArrayList<String> blockedUsersIds = in.createStringArrayList();
         this.blockedUsersIds = new RealmList<>();
         this.blockedUsersIds.addAll(blockedUsersIds);
+        ArrayList<String> connect_list = in.createStringArrayList();
+        this.connectList = new RealmList<>();
+        this.connectList.addAll(connect_list);
         deviceToken = in.readString();
         osType = in.readString();
         profileName = in.readString();
@@ -113,6 +121,8 @@ public class User implements Parcelable, RealmModel {
         this.typing = "";
     }
 
+
+
     public User(String id, String name, String status, String image, String deviceToken, String osType,
                 String userName, String password, String email, String webqrcode) {
         this.id = id;
@@ -138,6 +148,26 @@ public class User implements Parcelable, RealmModel {
         User user = (User) o;
 
         return id.equals(user.id);
+    }
+
+    public RealmList<String> getConnect_list()
+    {
+        return connectList;
+    }
+
+    public void setConnect_list(ArrayList<String> connect_list)
+    {
+        this.connectList.addAll(connect_list);
+    }
+
+    public int getIs_new()
+    {
+        return is_new;
+    }
+
+    public void setIs_new(int is_new)
+    {
+        this.is_new = is_new;
     }
 
     public String getNameInPhone() {
@@ -316,6 +346,7 @@ public class User implements Parcelable, RealmModel {
         parcel.writeByte((byte) (selected ? 1 : 0));
         parcel.writeString(id);
         parcel.writeString(name);
+        parcel.writeInt(is_new);
         parcel.writeString(status);
         parcel.writeString(image);
         parcel.writeString(wallpaper);
@@ -324,6 +355,13 @@ public class User implements Parcelable, RealmModel {
         if (this.blockedUsersIds != null) {
             blockedIds.addAll(this.blockedUsersIds);
             parcel.writeStringList(blockedIds);
+        }
+//        parcel.writeList(connectList);
+//        parcel.writeStringList(connectList);
+        ArrayList<String> connect_list = new ArrayList<>();
+        if (this.connectList != null) {
+            connect_list.addAll(this.connectList);
+            parcel.writeStringList(connect_list);
         }
         parcel.writeString(deviceToken);
         parcel.writeString(osType);

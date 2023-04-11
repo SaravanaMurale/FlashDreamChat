@@ -2,6 +2,7 @@ package com.hermes.chat.adapters;
 
 import android.content.Context;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,6 +29,7 @@ import java.util.ArrayList;
  */
 
 public class MenuUsersRecyclerAdapter extends RecyclerView.Adapter<MenuUsersRecyclerAdapter.BaseViewHolder> implements Filterable {
+    private static final String TAG = "MenuUsersRecyclerAdapte";
     private Context context;
     private OnUserGroupItemClick itemClickListener;
     private ArrayList<User> dataList, dataListFiltered;
@@ -165,6 +167,8 @@ public class MenuUsersRecyclerAdapter extends RecyclerView.Adapter<MenuUsersRecy
         }
 
         public void setData(User user) {
+
+            Log.d(TAG, "setData: "+user.getEmail());
             userName.setText(TextUtils.isEmpty(user.getNameInPhone()) ? user.getName() : user.getNameInPhone());
 
             String profileImageUrl = user.getImage();

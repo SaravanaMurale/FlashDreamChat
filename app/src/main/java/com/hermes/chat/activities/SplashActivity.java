@@ -25,8 +25,20 @@ public class SplashActivity extends AppCompatActivity {
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
+                /*Intent startHomeIntent = new Intent(SplashActivity.this,MainActivity.class);
+                Intent startLoginIntent = new Intent(SplashActivity.this,UserNameSignInActivity.class);
+
+                if(helper.getLoggedInUser() != null){
+
+                    startActivity(startHomeIntent);
+                    finish();
+                }else {
+                    if(helper.getLoggedInUser().getIs_new() !=1){
+                    startActivity(startLoginIntent);
+                    }
+                }*/
                 startActivity(new Intent(SplashActivity.this, helper.getLoggedInUser()
-                        != null ? MainActivity.class : UserNameSignInActivity.class));
+                        != null && helper.getLoggedInUser().getIs_new() !=1 ? MainActivity.class : UserNameSignInActivity.class));
                 finish();
             }
         }, 1500);

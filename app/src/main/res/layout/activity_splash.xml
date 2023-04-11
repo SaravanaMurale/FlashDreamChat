@@ -10,7 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scaleType="centerCrop"
-        android:src="@drawable/bg_splash" />
+        android:src="@drawable/icon_splash" />
 
     <TextView
         android:id="@+id/layout_splash_loading_txt"

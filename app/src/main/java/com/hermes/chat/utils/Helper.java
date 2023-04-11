@@ -71,6 +71,7 @@ public class Helper {
     private static final String USERNAME = "USERNAME";
     private static final String EMAIL = "EMAIL";
     private static final String PASSWORD = "PASSWORD";
+    private static final String ISNEW = "ISNEW";
     public static final String BROADCAST_USER = "com.dreamguys.dreamschat.services.USER";
     public static final String BROADCAST_MY_CONTACTS = "com.dreamguys.dreamschat.MY_CONTACTS";
     public static final String BROADCAST_MY_USERS = "com.dreamguys.dreamschat.MY_USERS";
@@ -221,6 +222,14 @@ public class Helper {
         return sharedPreferenceHelper.getStringPreference(PASSWORD);
     }
 
+    public void setIsNew(int isNew) {
+        sharedPreferenceHelper.setIntegerPreference(ISNEW, isNew);
+    }
+
+    public String getIsNew() {
+        return sharedPreferenceHelper.getStringPreference(ISNEW);
+    }
+
     public void clearPassword() {
         sharedPreferenceHelper.clearPreference(PASSWORD);
     }
@@ -343,6 +352,14 @@ public class Helper {
 
     public SharedPreferenceHelper getSharedPreferenceHelper() {
         return sharedPreferenceHelper;
+    }
+
+    public HashMap<String, User> getRestrictedUsers(){
+        if (this.myUsersNameInPhoneMap != null) {
+            return this.myUsersNameInPhoneMap;
+        } else {
+            return null;
+        }
     }
 
     public HashMap<String, User> getCacheMyUsers() {

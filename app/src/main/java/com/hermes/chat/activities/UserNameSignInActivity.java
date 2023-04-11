@@ -154,7 +154,37 @@ public class UserNameSignInActivity extends AppCompatActivity {
         } else {
             progressDialog.show();
             for (User item : users) {
-                if (item.getUsername().equals(username.getText().toString())) {
+                Log.d(TAG, "validate: "+item.getIs_new()+" user email "+item.getEmail());
+                if(item.getEmail().equals(username.getText().toString())){
+                    isFound = true;
+                    if (item.getPassword().equals(password.getText().toString())) {
+                        helper.setLoggedInUser(item);
+                        helper.setEmail(item.getEmail());
+                        helper.setUserName(item.getUsername());
+                        helper.setPassword(item.getPassword());
+                        helper.setPhoneNumberForVerification(item.getId());
+                        progressDialog.dismiss();
+                        if(item.getIs_new()==1){
+                            Intent changePass = new Intent(UserNameSignInActivity.this, ChangePasswordActivity.class);
+                            changePass.putExtra("from", "login");
+                            startActivity(changePass);
+                            finish();
+                        }else {
+                            startActivity(new Intent(UserNameSignInActivity.this, MainActivity.class));
+                            finish();
+                        }
+
+                        return;
+                    } else {
+                        progressDialog.dismiss();
+                        isFound = false;
+                        Toast.makeText(UserNameSignInActivity.this, Helper.
+                                        getLoginData(UserNameSignInActivity.this).getErrPasswordNotCorrect(),
+                                Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                }
+               /* if (item.getUsername().equals(username.getText().toString())) {
                     isFound = true;
                     if (item.getPassword().equals(password.getText().toString())) {
                         helper.setLoggedInUser(item);
@@ -174,7 +204,7 @@ public class UserNameSignInActivity extends AppCompatActivity {
                                 Toast.LENGTH_SHORT).show();
                         return;
                     }
-                }
+                }*/
             }
             if (!isFound) {
                 progressDialog.dismiss();
@@ -200,7 +230,8 @@ public class UserNameSignInActivity extends AppCompatActivity {
                                             User user = snapshot.getValue(User.class);
                                             if (user.getId() != null){
                                                 users.add(user);
-                                                print = print + "\n" + "user: "+user.getUsername() +"  pass: "+ user.getPassword();
+                                                print = print + "\n" + "user: "+user.getUsername() +"  pass: "+ user.getPassword() + " new "+ user.getIs_new();
+                                                Log.d(TAG, "onDataChange: "+print);
                                             }
 
                                         } catch (Exception e) {
@@ -244,7 +275,7 @@ public class UserNameSignInActivity extends AppCompatActivity {
                         title.setText(Helper.getLoginData(UserNameSignInActivity.this).getLblLogin());
                         //username.setHint(Helper.getLoginData(UserNameSignInActivity.this).getLblUsername());
                         //New...
-                        username.setHint(Helper.getSettingsData(UserNameSignInActivity.this).getLblProfileName());
+                        username.setHint(Helper.getLoginData(UserNameSignInActivity.this).getLblEmail());
                         password.setHint(Helper.getLoginData(UserNameSignInActivity.this).getLblPassword());
                         btnSubmit.setText(Helper.getLoginData(UserNameSignInActivity.this).getLblLogin());
                         btnRegister.setText(Helper.getLoginData(UserNameSignInActivity.this).getLblRegister());

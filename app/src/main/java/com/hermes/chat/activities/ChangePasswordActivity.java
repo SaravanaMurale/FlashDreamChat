@@ -254,6 +254,7 @@ public class ChangePasswordActivity extends AppCompatActivity {
                 if (e.getMessage() != null && e.getMessage().contains("invalid")) {
                     Toast.makeText(ChangePasswordActivity.this, Helper.getLoginData(
                                     ChangePasswordActivity.this).getLblInvalidOtp(),
+
                             Toast.LENGTH_LONG).show();
                 } else {
                     Toast.makeText(ChangePasswordActivity.this, e.getMessage() != null ? "\n" +
@@ -270,18 +271,27 @@ public class ChangePasswordActivity extends AppCompatActivity {
             progressDialog.show();
             User user = helper.getLoggedInUser();
             user.setPassword(password);
+            user.setIs_new(0);
             BaseApplication.getUserRef().child(helper.getPhoneNumberForVerification()).
                     setValue(user)
                     .addOnSuccessListener(new OnSuccessListener<Void>() {
                         @Override
                         public void onSuccess(Void aVoid) {
                             helper.setPassword(password);
+                            helper.setIsNew(0);
                             progressDialog.dismiss();
                             Toast.makeText(ChangePasswordActivity.this,
                                     Helper.getChangePwd(ChangePasswordActivity.this).getLblPwdSuccess(),
                                     Toast.LENGTH_SHORT).show();
-                            startActivity(new Intent(ChangePasswordActivity.this,
-                                    UserNameSignInActivity.class));
+
+                           /* if(getIntent().getStringExtra("from").equalsIgnoreCase("login"))
+                            {
+                                startActivity(new Intent(ChangePasswordActivity.this, ProfileActivity.class));
+                            } else {*/
+                                startActivity(new Intent(ChangePasswordActivity.this,
+                                        UserNameSignInActivity.class));
+                           /* }*/
+
                         }
                     }).addOnFailureListener(new OnFailureListener() {
                         @Override

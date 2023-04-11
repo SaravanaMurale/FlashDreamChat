@@ -39,7 +39,7 @@
                 android:layout_width="@dimen/_85sdp"
                 android:layout_height="@dimen/_85sdp"
                 android:layout_gravity="center"
-                android:src="@drawable/ic_logo_" />
+                android:src="@mipmap/ic_launcher" />
 
             <RelativeLayout
                 android:layout_width="match_parent"
@@ -55,7 +55,7 @@
                     android:background="@drawable/settings_item_border"
                     android:drawablePadding="16dp"
                     android:gravity="start|center"
-                    android:hint="Enter Username"
+                    android:hint="Enter Email"
                     android:inputType="text"
                     android:paddingStart="@dimen/_40sdp"
                     android:paddingEnd="4dp"

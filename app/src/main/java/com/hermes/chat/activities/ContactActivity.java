@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ImageView;
@@ -24,6 +25,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.ValueEventListener;
 import com.hermes.chat.BaseApplication;
 import com.hermes.chat.R;
 import com.hermes.chat.adapters.MenuUsersRecyclerAdapter;
@@ -45,6 +49,7 @@ import java.util.ArrayList;
 
 public class ContactActivity extends BaseActivity implements OnUserGroupItemClick, UserGroupSelectionDismissListener {
 
+    private static final String TAG = "ContactActivity";
     private RecyclerView menuRecyclerView;
     private SwipeRefreshLayout swipeMenuRecyclerView;
     private MenuUsersRecyclerAdapter menuUsersRecyclerAdapter;
@@ -58,9 +63,11 @@ public class ContactActivity extends BaseActivity implements OnUserGroupItemClic
     private ArrayList<Message> messageForwardList = new ArrayList<>();
     private ImageView backImage;
     private TextView user_name;
+    User user;
 
     @Override
     void myUsersResult(ArrayList<User> myUsers) {
+
         helper.setCacheMyUsers(myUsers);
         this.myUsers.clear();
         this.myUsers.addAll(myUsers);
@@ -145,7 +152,8 @@ public class ContactActivity extends BaseActivity implements OnUserGroupItemClic
         backImage = findViewById(R.id.back_button);
         clickListner();
 
-        setupMenu();
+        fetchContacts();
+//        setupMenu();
     }
 
     private void clickListner() {
@@ -160,13 +168,16 @@ public class ContactActivity extends BaseActivity implements OnUserGroupItemClic
     }
 
     private void setupMenu() {
+
         menuRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         menuUsersRecyclerAdapter = new MenuUsersRecyclerAdapter(this, myUsers, helper.getLoggedInUser());
         menuRecyclerView.setAdapter(menuUsersRecyclerAdapter);
+        swipeMenuRecyclerView.setRefreshing(false);
         swipeMenuRecyclerView.setColorSchemeResources(R.color.colorAccent);
         swipeMenuRecyclerView.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
+                myUsers.clear();
                 fetchContacts();
             }
         });
@@ -202,7 +213,93 @@ public class ContactActivity extends BaseActivity implements OnUserGroupItemClic
     }
 
     private void fetchContacts() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
+        BaseApplication.getUserRef()
+                .addListenerForSingleValueEvent(
+                        new ValueEventListener() {
+                            @Override
+                            public void onDataChange(DataSnapshot dataSnapshot) {
+                                    String print = "";
+                                    User user;
+                                    ArrayList<User> users= new ArrayList<>();
+                                    ArrayList<String> connectList = new ArrayList<>();
+                                    for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                                        try {
+                                            user = snapshot.getValue(User.class);
+                                            if (user.getId() != null){
+
+                                                users.add(user);
+                                                if(user.getId().equals(userMe.getId())){
+                                                    connectList.addAll(user.getConnect_list());
+                                                }
+
+                                            }
+
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+
+                                    for(int i=0;i<users.size();i++){
+                                        for(int j=0;j<connectList.size();j++){
+                                            try
+                                            {
+                                                if(connectList.get(j).equals(users.get(i).getId())){
+                                                    myUsers.add(users.get(i));
+                                                    Log.d(TAG, "onDataChange: "+users.get(i).getId());
+
+                                                }
+                                            }catch (Exception e){
+
+                                            }
+
+                                        }
+                                    }
+                                    setupMenu();
+
+
+                                    Log.d(TAG, "onDataChangevalue: "+print);
+
+
+                            }
+
+                            @Override
+                            public void onCancelled(DatabaseError databaseError) {
+
+                            }
+                        });
+       /* BaseApplication.getUserRef().child(userMe.getId())
+                .addListenerForSingleValueEvent(
+                        new ValueEventListener() {
+                            @Override
+                            public void onDataChange(DataSnapshot dataSnapshot) {
+//                                progressDialog.dismiss();
+                                try {
+                                    String print = "";
+
+                                        try {
+                                            User user = dataSnapshot.getValue(User.class);
+                                            ArrayList<String> connectList = new ArrayList<>();
+                                            connectList.addAll(user.getConnect_list());
+                                            myUsers.add(user);
+
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+
+                                    Log.d(TAG, "onDataChangevalue: "+print);
+
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                    Log.d(TAG, "onDataChange: catch");
+                                }
+                            }
+
+                            @Override
+                            public void onCancelled(DatabaseError databaseError) {
+
+                            }
+                        });*/
+        /*if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
             if (!FetchMyUsersService.STARTED) {
                 if (!swipeMenuRecyclerView.isRefreshing())
                     swipeMenuRecyclerView.setRefreshing(true);
@@ -210,7 +307,7 @@ public class ContactActivity extends BaseActivity implements OnUserGroupItemClic
             }
         } else {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_CONTACTS}, CONTACTS_REQUEST_CODE);
-        }
+        }*/
     }
 
 
@@ -219,7 +316,7 @@ public class ContactActivity extends BaseActivity implements OnUserGroupItemClic
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         switch (requestCode) {
             case CONTACTS_REQUEST_CODE:
-                fetchContacts();
+//                fetchContacts();
                 break;
         }
     }
@@ -227,7 +324,7 @@ public class ContactActivity extends BaseActivity implements OnUserGroupItemClic
     @Override
     protected void onResume() {
         super.onResume();
-        fetchContacts();
+//        fetchContacts();
     }
 
     private void refreshUsers(int pos) {
