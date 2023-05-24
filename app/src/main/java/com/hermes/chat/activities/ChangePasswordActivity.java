@@ -132,7 +132,8 @@ public class ChangePasswordActivity extends AppCompatActivity {
                         .addOnCompleteListener(new OnCompleteListener<Void>() {
                             @Override
                             public void onComplete(@NonNull Task<Void> task) {
-                                updatePassword(confirmPassword.getText().toString());
+                                if (task.isSuccessful())
+                                    updatePassword(confirmPassword.getText().toString());
                             }
                         });
             }
@@ -305,11 +306,10 @@ public class ChangePasswordActivity extends AppCompatActivity {
                             finish();*/
 
 
-                           if(getIntent().getExtras().containsKey("from") && getIntent().getStringExtra("from").equalsIgnoreCase("login"))
-                            {
-                               startActivity(new Intent(ChangePasswordActivity.this,
-                                    MainActivity.class));
-                               finish();
+                            if (getIntent().getExtras().containsKey("from") && getIntent().getStringExtra("from").equalsIgnoreCase("login")) {
+                                startActivity(new Intent(ChangePasswordActivity.this,
+                                        MainActivity.class));
+                                finish();
                             } else {
                                /*startActivity(new Intent(ChangePasswordActivity.this,
                                        MainActivity.class));*/

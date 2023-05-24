@@ -193,7 +193,7 @@ public class UserNameSignInActivity extends AppCompatActivity {
             if(item.getEmail().equals(username.getText().toString().trim())){
                 if(!item.getAdminblock()){
                     isFound = true;
-                    if (item.getPassword().equals(password.getText().toString())) {
+//                    if (item.getPassword().equals(password.getText().toString())) {
                         helper.setLoggedInUser(item);
                         helper.setEmail(item.getEmail());
                         helper.setUserName(item.getUsername());
@@ -215,14 +215,14 @@ public class UserNameSignInActivity extends AppCompatActivity {
                         }
 
                         return;
-                    } else {
+                    /*} else {
                         progressDialog.dismiss();
                         isFound = false;
                         Toast.makeText(UserNameSignInActivity.this, Helper.
                                         getLoginData(UserNameSignInActivity.this).getErrPasswordNotCorrect(),
                                 Toast.LENGTH_SHORT).show();
                         return;
-                    }
+                    }*/
                 } else {
                     progressDialog.dismiss();
                     isFound = false;
