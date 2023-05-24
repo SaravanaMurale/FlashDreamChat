@@ -20,16 +20,19 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.FirebaseException;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.PhoneAuthCredential;
+import com.google.firebase.auth.PhoneAuthProvider;
 import com.hermes.chat.BaseApplication;
 import com.hermes.chat.R;
 import com.hermes.chat.models.User;
 import com.hermes.chat.utils.Helper;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.firebase.FirebaseException;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.PhoneAuthCredential;
-import com.google.firebase.auth.PhoneAuthProvider;
 
 import java.util.concurrent.TimeUnit;
 
@@ -122,7 +125,19 @@ public class ChangePasswordActivity extends AppCompatActivity {
             Toast.makeText(this, "Password must be more than 5",
                     Toast.LENGTH_LONG).show();
         } else {
-            updatePassword(confirmPassword.getText().toString());
+            FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+            if (firebaseUser != null) {
+                firebaseUser.updatePassword(confirmPassword.getText().toString())
+
+                        .addOnCompleteListener(new OnCompleteListener<Void>() {
+                            @Override
+                            public void onComplete(@NonNull Task<Void> task) {
+                                updatePassword(confirmPassword.getText().toString());
+                            }
+                        });
+            }
+
+
 //            initiateAuth(helper.getPhoneNumberForVerification());
         }
     }

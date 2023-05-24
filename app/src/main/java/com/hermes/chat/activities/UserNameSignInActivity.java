@@ -27,9 +27,15 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.ValueEventListener;
+import com.google.gson.Gson;
 import com.hermes.chat.BaseApplication;
 import com.hermes.chat.R;
 import com.hermes.chat.adapters.LanguageListAdapter;
@@ -38,10 +44,6 @@ import com.hermes.chat.models.User;
 import com.hermes.chat.utils.Helper;
 import com.hermes.chat.utils.LocaleUtils;
 import com.hermes.chat.utils.SessionHandler;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.ValueEventListener;
-import com.google.gson.Gson;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.MultiplePermissionsReport;
 import com.karumi.dexter.PermissionToken;
@@ -49,7 +51,6 @@ import com.karumi.dexter.listener.PermissionRequest;
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
@@ -57,7 +58,6 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import io.realm.Realm;
-import io.realm.RealmList;
 
 public class UserNameSignInActivity extends AppCompatActivity {
 
@@ -83,6 +83,7 @@ public class UserNameSignInActivity extends AppCompatActivity {
     List<String> items;
     public static int pos = 0;
     private DatabaseReference idChatRef;
+    private FirebaseAuth mAuth;
 
 
     @Override
@@ -97,7 +98,7 @@ public class UserNameSignInActivity extends AppCompatActivity {
     }
 
     private void uiInit() {
-
+        mAuth = FirebaseAuth.getInstance();
         Dexter.withActivity(this)
                 .withPermissions(
                         /*Manifest.permission.READ_CONTACTS,*/
@@ -167,73 +168,92 @@ public class UserNameSignInActivity extends AppCompatActivity {
                     Helper.getLoginData(UserNameSignInActivity.this).getLblPassword(), Toast.LENGTH_SHORT).show();
         } else {
             progressDialog.show();
-            Log.d(TAG, "users count: "+ users.size());
-            for (User item : users) {
-                Log.d(TAG, "validate: "+item.getIs_new()+" user email "+item.getEmail()+" === new "+item.getAdminblock());
-                if(item.getEmail().equals(username.getText().toString().trim())){
-                    if(!item.getAdminblock()){
-                        isFound = true;
-                        if (item.getPassword().equals(password.getText().toString())) {
-                            helper.setLoggedInUser(item);
-                            helper.setEmail(item.getEmail());
-                            helper.setUserName(item.getUsername());
-                            helper.setPassword(item.getPassword());
-                            helper.setPhoneNumberForVerification(item.getId());
-                            progressDialog.dismiss();
-                            if(item.getIs_new()==1){
-                                SharedPreferences prefs = getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
-                                prefs.edit().putString("LoggedIn","true").apply();
-                                Intent changePass = new Intent(UserNameSignInActivity.this, ChangePasswordActivity.class);
-                                changePass.putExtra("from", "login");
-                                startActivity(changePass);
-                                finish();
-                            }else {
-                                SharedPreferences prefs = getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
-                                prefs.edit().putString("LoggedIn","true").apply();
-                                startActivity(new Intent(UserNameSignInActivity.this, MainActivity.class));
-                                finish();
-                            }
+            mAuth.signInWithEmailAndPassword(username.getText().toString(), password.getText().toString())
+                    .addOnCompleteListener(
+                            new OnCompleteListener<AuthResult>() {
+                                @Override
+                                public void onComplete(
+                                        @NonNull Task<AuthResult> task) {
+                                    if (task.isSuccessful()) {
+                                        authenticate();
+                                    } else {
+                                        progressDialog.dismiss();
+                                        Toast.makeText(UserNameSignInActivity.this, Helper.
+                                                getLoginData(UserNameSignInActivity.this).getErrUserNotFound(), Toast.LENGTH_SHORT).show();
+                                    }
+                                }
+                            });
+        }
+    }
 
-                            return;
-                        } else {
-                            progressDialog.dismiss();
-                            isFound = false;
-                            Toast.makeText(UserNameSignInActivity.this, Helper.
-                                            getLoginData(UserNameSignInActivity.this).getErrPasswordNotCorrect(),
-                                    Toast.LENGTH_SHORT).show();
-                            return;
+    private void authenticate(){
+        Log.d(TAG, "users count: "+ users.size());
+        for (User item : users) {
+            Log.d(TAG, "validate: "+item.getIs_new()+" user email "+item.getEmail()+" === new "+item.getAdminblock());
+            if(item.getEmail().equals(username.getText().toString().trim())){
+                if(!item.getAdminblock()){
+                    isFound = true;
+                    if (item.getPassword().equals(password.getText().toString())) {
+                        helper.setLoggedInUser(item);
+                        helper.setEmail(item.getEmail());
+                        helper.setUserName(item.getUsername());
+                        helper.setPassword(item.getPassword());
+                        helper.setPhoneNumberForVerification(item.getId());
+                        progressDialog.dismiss();
+                        if(item.getIs_new()==1){
+                            SharedPreferences prefs = getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
+                            prefs.edit().putString("LoggedIn","true").apply();
+                            Intent changePass = new Intent(UserNameSignInActivity.this, ChangePasswordActivity.class);
+                            changePass.putExtra("from", "login");
+                            startActivity(changePass);
+                            finish();
+                        }else {
+                            SharedPreferences prefs = getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
+                            prefs.edit().putString("LoggedIn","true").apply();
+                            startActivity(new Intent(UserNameSignInActivity.this, MainActivity.class));
+                            finish();
                         }
+
+                        return;
                     } else {
                         progressDialog.dismiss();
                         isFound = false;
-                        Toast.makeText(UserNameSignInActivity.this, "Blocked by Admin",
+                        Toast.makeText(UserNameSignInActivity.this, Helper.
+                                        getLoginData(UserNameSignInActivity.this).getErrPasswordNotCorrect(),
                                 Toast.LENGTH_SHORT).show();
-                        try {
-//                idChatRef.removeEventListener(valueEventListener);
-                            helper.setCacheMyUsers(new ArrayList<>());
-                            FirebaseAuth.getInstance().signOut();
-                            LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(new Intent(Helper.BROADCAST_LOGOUT));
-//                                    sinchServiceInterface.stopClient();
-                            helper.clearPhoneNumberForVerification();
-                            helper.logout();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                        try {
-                            Helper.getRealmInstance().executeTransaction(new Realm.Transaction() {
-                                @Override
-                                public void execute(Realm realm) {
-                                    realm.deleteAll();
-                                }
-                            });
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                        fetchUsers();
                         return;
                     }
-
+                } else {
+                    progressDialog.dismiss();
+                    isFound = false;
+                    Toast.makeText(UserNameSignInActivity.this, "Blocked by Admin",
+                            Toast.LENGTH_SHORT).show();
+                    try {
+//                idChatRef.removeEventListener(valueEventListener);
+                        helper.setCacheMyUsers(new ArrayList<>());
+                        FirebaseAuth.getInstance().signOut();
+                        LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(new Intent(Helper.BROADCAST_LOGOUT));
+//                                    sinchServiceInterface.stopClient();
+                        helper.clearPhoneNumberForVerification();
+                        helper.logout();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    try {
+                        Helper.getRealmInstance().executeTransaction(new Realm.Transaction() {
+                            @Override
+                            public void execute(Realm realm) {
+                                realm.deleteAll();
+                            }
+                        });
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    fetchUsers();
+                    return;
                 }
+
+            }
                /* if (item.getUsername().equals(username.getText().toString())) {
                     isFound = true;
                     if (item.getPassword().equals(password.getText().toString())) {
@@ -255,12 +275,11 @@ public class UserNameSignInActivity extends AppCompatActivity {
                         return;
                     }
                 }*/
-            }
-            if (!isFound) {
-                progressDialog.dismiss();
-                Toast.makeText(UserNameSignInActivity.this, Helper.
-                        getLoginData(UserNameSignInActivity.this).getErrUserNotFound(), Toast.LENGTH_SHORT).show();
-            }
+        }
+        if (!isFound) {
+            progressDialog.dismiss();
+            Toast.makeText(UserNameSignInActivity.this, Helper.
+                    getLoginData(UserNameSignInActivity.this).getErrUserNotFound(), Toast.LENGTH_SHORT).show();
         }
     }
 
