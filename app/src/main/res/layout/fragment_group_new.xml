@@ -75,7 +75,7 @@
                                 android:layout_width="@dimen/_155sdp"
                                 android:layout_height="@dimen/_155sdp"
                                 android:layout_gravity="center"
-                                android:src="@drawable/group_camera" />
+                                android:src="@drawable/ic_camera_red" />
 
                             <ProgressBar
                                 android:id="@+id/groupImageProgress"
@@ -168,7 +168,7 @@
                         android:background="@drawable/dotted_border"
                         android:padding="4dp"
                         android:text="  + Add more  "
-                        android:textColor="@color/border_red"
+                        android:textColor="@color/colorPrimary"
                         android:textSize="16sp" />
 
                     <androidx.recyclerview.widget.RecyclerView

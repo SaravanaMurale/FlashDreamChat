@@ -1,5 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name">Hermes</string>
+    <string name="app_name">Flash Chat</string>
 
     <string name="permission_read_ext_storage_denied" tools:keep="@string/permission_read_ext_storage_denied">Read external storage permission was denied. Please consider granting it in order to upload image!</string>
     <string name="permission_read_ext_storage_never_askagain" tools:keep="@string/permission_read_ext_storage_never_askagain">Read external storage permission was denied with never ask again.</string>
@@ -16,7 +16,7 @@
     <string name="button_allow" tools:keep="@string/button_allow">Allow</string>
     <string name="button_deny" tools:keep="@string/button_deny">Deny</string>
 
-    <string name="authority">com.dreamguys.dreamschat.utils.fileprovider</string>
+    <string name="authority">com.hermes.chat.utils.fileprovider</string>
 
 
     <string name="hello_blank_fragment" tools:keep="@string/hello_blank_fragment">Hello blank fragment</string>
@@ -67,8 +67,7 @@
     <string name="other_calls">Other Calls</string>
 
     <string name="osType">Android</string>
-    <string name="firebase_server_key">AAAA95J15T4:APA91bFc0CQOUgz_QX6jpYHnWVEukZ2PYE2faMVZE-eqlTRKcNd4G-MgUCLrzFLQznZ3nvgTrEmz7asn-nOAMHHiZcTaoPI3nDG5B8Tzc9iZv9swl0ml8DRf5YgjYvZWJDZgPEegQWWJ</string>
-    <string name="key">AIzaSyDJUOtTTiSSU9tNFJ9QPR3--2Kb31u1OA0</string>
+
     <string name="location_Permission_Needed">Location Permission Needed</string>
     <string name="location_Permission_msg">This app needs the Location permission, please accept to use location functionality</string>
     <string name="ok">OK</string>
@@ -80,6 +79,9 @@
     <string name="enter_old_password">Enter Current Password</string>
     <string name="enter_new_password">Enter New Password</string>
     <string name="default_status">Hey I am available in </string>
-    <string name="agora_app_id">e368b7a2b5d84c34a1b31da838758a32</string>
+    <!--<string name="agora_app_id">e368b7a2b5d84c34a1b31da838758a32</string>-->
+    <string name="agora_app_id">3d5b9922d20b4cec953fda1e47e0020b</string>
+
+    <string name="search">Search User</string>
 
 </resources>

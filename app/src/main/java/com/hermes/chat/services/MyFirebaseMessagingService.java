@@ -23,6 +23,7 @@ import android.os.PowerManager;
 import android.os.Vibrator;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
@@ -44,6 +45,7 @@ import org.json.JSONObject;
 import java.util.Random;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
+    private static final String TAG = "MyFirebaseMessagingServ";
     private final String ADMIN_CHANNEL_ID = "admin_channel";
     Helper helper;
     NotificationManager notificationManager;
@@ -197,6 +199,15 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         }
     }
 
+    @Override
+    public void handleIntent(@NonNull Intent intent)
+    {
+        super.handleIntent(intent);
+        if(intent.getExtras()!=null){
+
+            Log.d(TAG, "handleIntent: "+intent.getExtras());
+        }
+    }
 
     public void receiveMessage(RemoteMessage remoteMessage) {
         try {
@@ -206,7 +217,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
             final Uri alarmSound = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE
                     + "://" + getApplicationContext().getPackageName() + "/raw/notification");
-            final int icon = R.drawable.ic_logo_;
+            final int icon = R.mipmap.ic_appicon_flash;
             if (remoteMessage.getData().get("title").equalsIgnoreCase("Audio Call")) {
                 JSONObject json = new JSONObject(remoteMessage.getData());
                 Intent callIntent = new Intent();
@@ -216,7 +227,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 callIntent.putExtra("data", json.toString());
                 callIntent.putExtra(ConstantApp.ACTION_KEY_CHANNEL_NAME, remoteMessage.getData().get("body"));
                 final PendingIntent resultPendingIntent =
-                        PendingIntent.getActivity(getApplicationContext(), (int) System.currentTimeMillis(), callIntent, PendingIntent.FLAG_ONE_SHOT);
+                        PendingIntent.getActivity(getApplicationContext(), (int) System.currentTimeMillis(), callIntent, PendingIntent.FLAG_ONE_SHOT|PendingIntent.FLAG_IMMUTABLE);
 
                 Helper helper = new Helper(getApplicationContext());
                 User userMe = helper.getLoggedInUser();
@@ -245,7 +256,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 callIntent.putExtra("data", json.toString());
                 callIntent.putExtra(ConstantApp.ACTION_KEY_CHANNEL_NAME, remoteMessage.getData().get("body"));
                 final PendingIntent resultPendingIntent =
-                        PendingIntent.getActivity(getApplicationContext(), (int) System.currentTimeMillis(), callIntent, PendingIntent.FLAG_ONE_SHOT);
+                        PendingIntent.getActivity(getApplicationContext(), (int) System.currentTimeMillis(), callIntent, PendingIntent.FLAG_ONE_SHOT|PendingIntent.FLAG_IMMUTABLE);
                 Helper helper = new Helper(getApplicationContext());
                 User userMe = helper.getLoggedInUser();
                 if (userMe != null && userMe.getBlockedUsersIds() != null
@@ -343,14 +354,14 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                     // intent.putParcelableArrayListExtra("extradatalist", new ArrayList<>());
                     intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                     PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent,
-                            PendingIntent.FLAG_ONE_SHOT);
+                            PendingIntent.FLAG_ONE_SHOT|PendingIntent.FLAG_IMMUTABLE);
 
                     Bitmap largeIcon = BitmapFactory.decodeResource(getResources(),
-                            R.drawable.ic_logo_);
+                            R.mipmap.ic_appicon_flash);
 
 
                     NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, ADMIN_CHANNEL_ID)
-                            .setSmallIcon(R.drawable.ic_logo_)
+                            .setSmallIcon(R.mipmap.ic_appicon_flash)
                             .setLargeIcon(largeIcon)
                             .setContentIntent(pendingIntent)
                             .setContentTitle(remoteMessage.getData().get("title").startsWith(Helper.GROUP_PREFIX) ? remoteMessage.getData().get("title")
@@ -445,7 +456,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 .setWhen(System.currentTimeMillis())
                 .setDefaults(DEFAULT_ALL)
                 .setShowWhen(true)
-                .setSmallIcon(R.drawable.ic_logo_)
+                .setSmallIcon(R.mipmap.ic_appicon_flash)
                 .setChannelId("channel_01") // set channel id
                 .setLargeIcon(BitmapFactory.decodeResource(getApplicationContext().getResources(), icon))
                 .setContentText(message)

@@ -4,16 +4,26 @@ import static android.app.Activity.RESULT_OK;
 import static com.hermes.chat.utils.Helper.getStatusData;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.media.ThumbnailUtils;
 import android.net.Uri;
+import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.ContactsContract;
+import android.provider.MediaStore;
+import android.provider.Settings;
 import android.util.Log;
 import android.util.Patterns;
 import android.view.LayoutInflater;
@@ -28,16 +38,27 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import com.google.android.gms.tasks.Continuation;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.storage.UploadTask;
+import com.hermes.chat.BaseApplication;
 import com.hermes.chat.R;
+import com.hermes.chat.activities.ChatActivity;
 import com.hermes.chat.activities.MainActivity;
 import com.hermes.chat.activities.MyStatusActivity;
 import com.hermes.chat.activities.StatusStoriesActivity;
+import com.hermes.chat.activities.UserNameSignInActivity;
 import com.hermes.chat.adapters.StatusAdapter;
 import com.hermes.chat.interfaces.HomeIneractor;
+import com.hermes.chat.models.Attachment;
 import com.hermes.chat.models.AttachmentArrayList;
 import com.hermes.chat.models.AttachmentList;
 import com.hermes.chat.models.AttachmentTypes;
@@ -71,6 +92,7 @@ import com.squareup.picasso.Picasso;
 import com.theartofdev.edmodo.cropper.CropImage;
 import com.theartofdev.edmodo.cropper.CropImageView;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -86,6 +108,7 @@ import io.realm.Sort;
 
 public class MyStatusFragment extends Fragment implements ImagePickerCallback {
 
+    private static final String TAG = "MyStatusFragment";
     boolean isCacheEnabled = true;
     boolean isImmersiveEnabled = true;
     boolean isTextEnabled = false;
@@ -98,6 +121,7 @@ public class MyStatusFragment extends Fragment implements ImagePickerCallback {
 
     private Realm rChatDb;
     private User userMe;
+    private ArrayList<User> myUsers = new ArrayList<>();
 
     private RealmResults<StatusNew> resultList;
     private ArrayList<StatusNew> chatDataList = new ArrayList<>();
@@ -137,6 +161,9 @@ public class MyStatusFragment extends Fragment implements ImagePickerCallback {
     private TextView info;
     private TextView titleNewStatus;
 
+    File image;
+    AlertDialog.Builder builder;
+
     private RealmChangeListener<RealmResults<StatusNew>> chatListChangeListener =
             new RealmChangeListener<RealmResults<StatusNew>>() {
                 @Override
@@ -144,9 +171,17 @@ public class MyStatusFragment extends Fragment implements ImagePickerCallback {
                     if (element != null && element.isValid() && element.size() > 0) {
                         chatDataList.clear();
                         chatDataList.addAll(rChatDb.copyFromRealm(element));
+                        Log.d(TAG, "onChange: 1"+chatDataList.size());
                         statusNew = null;
                         fillAdapter();
                         setUserNamesAsInPhone();
+                    } else if (element.size() ==0 ){
+                        //New...
+                        //No Status From your Users, Make Empty List
+                        chatDataList.clear();
+                        i = 0;
+                        statusNew = null;
+                        fillAdapter();
                     }
                 }
             };
@@ -158,7 +193,7 @@ public class MyStatusFragment extends Fragment implements ImagePickerCallback {
     public void onAttach(Context context) {
         super.onAttach(context);
         this.context = context;
-        fetchMyContacts();
+        fetchContacts();
         try {
             homeInteractor = (HomeIneractor) context;
         } catch (ClassCastException e) {
@@ -177,9 +212,71 @@ public class MyStatusFragment extends Fragment implements ImagePickerCallback {
         super.onCreate(savedInstanceState);
         helper = new Helper(getContext());
         userMe = homeInteractor.getUserMe();
+
+        try
+        {
+            if(userMe.getAdminblock()){
+                checkBlocked();
+            }
+        }catch (Exception E){
+
+        }
+
         Realm.init(getContext());
+        builder = new AlertDialog.Builder(requireContext());
         rChatDb = Helper.getRealmInstance();
         dialog = new ProgressDialog(context);
+    }
+
+    private void checkBlocked()
+    {
+
+
+          /*  BaseApplication.getUserRef().child(userMe.getId()).addValueEventListener(new ValueEventListener()
+            {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot)
+                {
+                    User user= snapshot.getValue(User.class);
+                    if(user.getAdminblock()){*/
+        try {
+//                idChatRef.removeEventListener(valueEventListener);
+            helper.setCacheMyUsers(new ArrayList<>());
+            FirebaseAuth.getInstance().signOut();
+            LocalBroadcastManager.getInstance(requireContext()).sendBroadcast(new Intent(Helper.BROADCAST_LOGOUT));
+//                                    sinchServiceInterface.stopClient();
+            helper.clearPhoneNumberForVerification();
+            helper.logout();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            Helper.getRealmInstance().executeTransaction(new Realm.Transaction() {
+                @Override
+                public void execute(Realm realm) {
+                    realm.deleteAll();
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        SharedPreferences prefs = context.getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
+        prefs.edit().putString("LoggedIn","false");
+        Intent mIntent = new Intent(context, UserNameSignInActivity.class);
+        mIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(mIntent);
+        requireActivity().finish();
+                   /* }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error)
+                {
+
+                }
+            });*/
+
+
     }
 
     @Nullable
@@ -190,13 +287,44 @@ public class MyStatusFragment extends Fragment implements ImagePickerCallback {
         view.findViewById(R.id.fab_chat).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                openDialog();
+//                openDialog();
+                if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.TIRAMISU) {
+                    chooseDialog();
+                }else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    chooseDialog();
+                   /* if (FileUtils.checkPermission(requireActivity())) {
+                        chooseDialog();
+                    }else {
+                        requestPermission();
+                    }*/
+                }
+                        /*if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.R) {
+                            chooseDialog();
+                        }*/else {
+                    openImageClick();
+                }
             }
         });
         view.findViewById(R.id.chat_badge).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                openDialog();
+//                openDialog();
+                if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.TIRAMISU) {
+                    chooseDialog();
+                }else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+
+                    chooseDialog();
+                    /*if (FileUtils.checkPermission(requireActivity())) {
+                        chooseDialog();
+                    }else {
+                        requestPermission();
+                    }*/
+                }
+                        /*if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.R) {
+                            chooseDialog();
+                        }*/else {
+                    openImageClick();
+                }
             }
         });
 
@@ -253,6 +381,7 @@ public class MyStatusFragment extends Fragment implements ImagePickerCallback {
 
                     chatDataList.clear();
                     chatDataList.addAll(rChatDb.copyFromRealm(resultList));
+                    Log.d(TAG, "onChange: 2"+chatDataList.size());
                     i = 0;
                     statusNew = null;
                     fillAdapter();
@@ -275,6 +404,84 @@ public class MyStatusFragment extends Fragment implements ImagePickerCallback {
         });
 
         return view;
+    }
+
+    private void requestPermission(){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R){
+            //Android is 11(R) or above
+            try {
+
+                Intent intent = new Intent();
+                intent.setAction(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+                Uri uri = Uri.fromParts("package", requireContext().getPackageName(), null);
+                intent.setData(uri);
+                startActivityForResult(intent,201);
+            }
+            catch (Exception e){
+                Intent intent = new Intent();
+                intent.setAction(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+                startActivityForResult(intent,201);
+            }
+        }
+
+    }
+
+    private void chooseDialog() {
+        builder.setMessage("Choose Image Picking Options") .setTitle("Choose Image")
+                .setCancelable(true)
+                .setPositiveButton("Gallery", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.cancel();
+                        if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.TIRAMISU) {
+                            Intent intent = new Intent(MediaStore.ACTION_PICK_IMAGES);
+                            intent.setType("image/*");
+                            startActivityForResult(intent, 1537);
+                        }/*else if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.R){*/
+                            /*Intent intent = new Intent();
+                            intent.setType("image/*");
+                            intent.setAction(Intent.ACTION_GET_CONTENT);
+                            startActivityForResult(intent, 1537);*/
+                        else {
+                            androidRGallery();
+                        }
+
+                    }
+                })
+                .setNegativeButton("Camera", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.cancel();
+
+                        File path = new File(requireContext().getFilesDir(), "/FlashChat/Camera");
+                        if (!path.exists()) path.mkdirs();
+                        image = new File(path, FileUtils.getFileName());
+                        Uri imageUri = FileProvider.getUriForFile(requireContext().getApplicationContext(), getString(R.string.authority), image);
+                        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                      /*  Bundle newExtras = new Bundle();
+                        if (imageUri != null) {
+                            newExtras.putParcelable(MediaStore.EXTRA_OUTPUT, imageUri);
+                        } else {
+                            newExtras.putBoolean("return-data", true);
+                        }*/
+                        intent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
+//                        intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                        //intent.putExtra(MediaStore.EXTRA_OUTPUT);
+                        if(intent.resolveActivity(requireContext().getPackageManager()) != null) {
+                            startActivityForResult(intent,
+                                    1515);
+                        }
+//                        startActivityForResult(intent, 1515);
+                    }
+                });
+        //Creating dialog box
+        AlertDialog alert = builder.create();
+        alert.show();
+    }
+
+    public void androidRGallery() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("image/*");
+        intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        startActivityForResult(intent,1537);
     }
 
     private void openDialog() {
@@ -306,13 +513,24 @@ public class MyStatusFragment extends Fragment implements ImagePickerCallback {
     }*/
 
     @Override
+    public void onResume()
+    {
+        super.onResume();
+        userMe = helper.getLoggedInUser();
+        if(userMe.getAdminblock()){
+           checkBlocked();
+        }
+    }
+
+    @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         try {
-            RealmQuery<StatusNew> query = rChatDb.where(StatusNew.class)/*.equalTo("myId", userMe.getId())*/;//Query from chats whose owner is logged in user
+            RealmQuery<StatusNew> query = rChatDb.where(StatusNew.class)/*.equalTo("myId", userMe.getId())*/;/*.equalTo("myId", userMe.getId())*/;//Query from chats whose owner is logged in user
             resultList = query.isNotNull("userId").sort("timeUpdated", Sort.DESCENDING).findAll();//ignore forward list of messages and get rest sorted according to time
             chatDataList.clear();
             chatDataList.addAll(rChatDb.copyFromRealm(resultList));
+            Log.d(TAG, "onChange: 3"+chatDataList.size());
             resultList.addChangeListener(chatListChangeListener);
             statusNew = null;
             fillAdapter();
@@ -356,12 +574,22 @@ public class MyStatusFragment extends Fragment implements ImagePickerCallback {
     }
 
     private void fillAdapter() {
-        chatChild = userMe.getId();
+        try
+        {
+            chatChild = userMe.getId();
+        }catch (Exception e){
+
+        }
+
         filterDataList.clear();
-        fetchMyContacts();
+        fetchContacts();
         for (StatusNew status : chatDataList) {
-            for (Contact contact : myContacts) {
+            /*for (Contact contact : myContacts) {
                 if (Helper.contactMatches(status.getUserId(), contact.getPhoneNumber())) {
+                    filterDataList.add(status);
+                }*/
+            for (User contact : myUsers) {
+                if (Helper.contactMatches(status.getUserId(), contact.getId())) {
                     filterDataList.add(status);
                 }
                /* if (status.getUserId().equals(Contact.getPhoneNumber())) {
@@ -456,6 +684,12 @@ public class MyStatusFragment extends Fragment implements ImagePickerCallback {
             statusBadge.setVisibility(View.GONE);
             ivMore.setVisibility(View.GONE);
             myResources = null;
+            Picasso.get()
+                    .load(R.drawable.ic_avatar)
+                    .tag(this)
+                    .error(R.drawable.ic_avatar)
+                    .placeholder(R.drawable.ic_avatar)
+                    .into(img);
         }
 
         statusAdapter = new StatusAdapter(this.context, finalDataList, MyStatusFragment.this);
@@ -524,7 +758,8 @@ public class MyStatusFragment extends Fragment implements ImagePickerCallback {
         a.putExtra(StatusStoriesActivity.IS_IMMERSIVE_KEY, isImmersiveEnabled);
         a.putExtra(StatusStoriesActivity.IS_CACHING_ENABLED_KEY, isCacheEnabled);
         a.putExtra(StatusStoriesActivity.IS_TEXT_PROGRESS_ENABLED_KEY, isTextEnabled);
-        a.putExtra(StatusStoriesActivity.USER_NAME, finalDataList.get(position).getUser().getNameToDisplay());
+        Log.d(TAG, "navigateStatusStories: "+finalDataList.get(position).getUser().getName());
+        a.putExtra(StatusStoriesActivity.USER_NAME, finalDataList.get(position).getUser().getName());
         a.putExtra(StatusStoriesActivity.URL, finalDataList.get(position).getUser().getImage());
         a.putExtra(StatusStoriesActivity.RECIPIENT_ID, finalDataList.get(position).getUserId());
         startActivity(a);
@@ -539,13 +774,13 @@ public class MyStatusFragment extends Fragment implements ImagePickerCallback {
                     if (helper.getCacheMyUsers() != null && helper.getCacheMyUsers().containsKey(user.getId())) {
                         user.setNameInPhone(helper.getCacheMyUsers().get(user.getId()).getNameToDisplay());
                     } else {
-                        for (Contact savedContact : myContacts) {
-                            if (Helper.contactMatches(user.getId(), savedContact.getPhoneNumber())) {
-                                if (user.getNameInPhone() == null || !user.getNameInPhone().equals(savedContact.getName())) {
+                        for (User savedContact : myUsers) {
+                            /*if (Helper.contactMatches(user.getId(), savedContact.getPhoneNumber())) {
+                                if (user.getNameInPhone() == null || !user.getNameInPhone().equals(savedContact.getName())) {*/
                                     user.setNameInPhone(savedContact.getName());
-                                }
-                                break;
-                            }
+                               /* }
+                                break;*/
+                           /* }*/
                         }
                     }
                 }
@@ -555,7 +790,69 @@ public class MyStatusFragment extends Fragment implements ImagePickerCallback {
             statusAdapter.notifyDataSetChanged();
     }
 
-    private void fetchMyContacts() {
+    private void fetchContacts() {
+        BaseApplication.getUserRef()
+                .addListenerForSingleValueEvent(
+                        new ValueEventListener() {
+                            @Override
+                            public void onDataChange(DataSnapshot dataSnapshot) {
+                                String print = "";
+                                User user;
+                                ArrayList<User> users= new ArrayList<>();
+                                ArrayList<String> connectList = new ArrayList<>();
+                                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                                    try {
+                                        user = snapshot.getValue(User.class);
+                                        if (user.getId() != null){
+
+                                            users.add(user);
+                                            if(user.getId().equals(userMe.getId())){
+                                                connectList.addAll(user.getConnect_list());
+                                            }
+
+                                        }
+
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+
+                                myUsers.clear();
+                                for(int i=0;i<users.size();i++){
+                                    for(int j=0;j<connectList.size();j++){
+                                        try
+                                        {
+                                            if(connectList.get(j).equals(users.get(i).getId())){
+                                                myUsers.add(users.get(i));
+                                                Log.d(TAG, "onDataChange: "+users.get(i).getId());
+                                                setUserNamesAsInPhone();
+                                            }
+                                        }catch (Exception e){
+
+                                        }
+
+                                    }
+//                                    break;
+                                }
+
+
+//                                setupMenu();
+
+
+//                                Log.d(TAG, "onDataChangevalue: "+print);
+
+
+                            }
+
+                            @Override
+                            public void onCancelled(DatabaseError databaseError) {
+
+                            }
+                        });
+
+    }
+
+    /*private void fetchMyContacts() {
         myContacts = new ArrayList<>();
         Cursor cursor = context.getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, null);
         if (cursor != null && !cursor.isClosed()) {
@@ -579,7 +876,7 @@ public class MyStatusFragment extends Fragment implements ImagePickerCallback {
             }
             cursor.close();
         }
-    }
+    }*/
 
     protected boolean permissionsAvailable(String[] permissions) {
         boolean granted = true;
@@ -815,6 +1112,7 @@ public class MyStatusFragment extends Fragment implements ImagePickerCallback {
                             .sort("timeUpdated", Sort.DESCENDING).findAll();
                     chatDataList.clear();
                     chatDataList.addAll(rChatDb.copyFromRealm(resultList));
+                    Log.d(TAG, "onChange: 4"+chatDataList.size());
                     i = 0;
                     statusNew = null;
                     fillAdapter();
@@ -904,6 +1202,14 @@ public class MyStatusFragment extends Fragment implements ImagePickerCallback {
                     }
                     cameraPicker.submit(data);
                     break;
+                case 1515:
+                    Log.d("OS_13","IMAGE");
+                    onSelectFromGalleryResult(data,"Camera");
+                    break;
+                case 1537:
+                    Log.d("OS_13","IMAGE");
+                    onSelectFromGalleryResult(data,"Image");
+                    break;
             }
         }
 
@@ -925,4 +1231,110 @@ public class MyStatusFragment extends Fragment implements ImagePickerCallback {
             }
         }
     }
+
+    private void onSelectFromGalleryResult(Intent data,String type) {
+        try {
+
+            if (data != null || getDeviceName().equalsIgnoreCase("samsung")) {
+
+                Uri uri;
+                String path = "";
+
+                if (type.equalsIgnoreCase("Camera")) {
+                    //uri = Uri.fromFile(image);
+                    path = image.getAbsolutePath();
+                }else {
+                    path = FileUtils.getRealPathFromURI(requireContext(),data.getData());
+                }
+
+                switch (type){
+                    case "Image":
+                    case "Camera":
+                        uploadImage(path);
+                        break;
+
+
+                }
+            }else {
+                if (type.equalsIgnoreCase("Camera")) {
+                    uploadImage(image.getAbsolutePath());
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    /*private void onSelectFromGalleryResult(Intent data, String type)
+    {
+        try {
+
+
+            Log.d(TAG, "onSelectFromGalleryResult: "+getDeviceName());
+
+            if (data != null || data.getData() != null || getDeviceName().equalsIgnoreCase("samsung")) {
+
+                Uri uri;
+                String path = "";
+
+                if (type.equalsIgnoreCase("Camera")) {
+                    //uri = Uri.fromFile(image);
+                    path = data.getData().getPath();
+//                    path = data.getData().getPath();
+                   *//* if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.R){
+                        path = data.getData().getPath();
+                    } else {
+                        path = image.getAbsolutePath();
+                    }*//*
+
+                }else {
+                    path = FileUtils.getRealPathFromURI(requireContext(),data.getData());
+                }
+
+                switch (type){
+                    case "Image":
+                    case "Camera":
+                        uploadImage(path);
+                        break;
+
+                }
+            } else
+            {
+                if (type.equalsIgnoreCase("Camera"))
+                {
+                    uploadImage(image.getAbsolutePath());
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }*/
+
+
+
+    public String getDeviceName() {
+        String manufacturer = Build.MANUFACTURER;
+        String model = Build.MODEL;
+        if (model.toLowerCase().startsWith(manufacturer.toLowerCase())) {
+            return capitalize(model);
+        } else {
+            return capitalize(manufacturer) + " " + model;
+        }
+    }
+
+    private String capitalize(String s) {
+        if (s == null || s.length() == 0) {
+            return "";
+        }
+        char first = s.charAt(0);
+        if (Character.isUpperCase(first)) {
+            return s;
+        } else {
+            return Character.toUpperCase(first) + s.substring(1);
+        }
+    }
+
 }

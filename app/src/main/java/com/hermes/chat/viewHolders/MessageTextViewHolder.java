@@ -3,6 +3,7 @@ package com.hermes.chat.viewHolders;
 import android.animation.ValueAnimator;
 import android.os.Handler;
 import android.text.method.LinkMovementMethod;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,7 +18,9 @@ import com.hermes.chat.interfaces.OnMessageItemClick;
 import com.hermes.chat.models.AttachmentTypes;
 import com.hermes.chat.models.Message;
 import com.hermes.chat.models.User;
+import com.hermes.chat.utils.FileUtils;
 import com.hermes.chat.utils.GeneralUtils;
+import com.hermes.chat.utils.Helper;
 import com.hermes.chat.utils.LinkTransformationMethod;
 import com.squareup.picasso.Picasso;
 import com.vanniktech.emoji.EmojiTextView;
@@ -33,6 +36,8 @@ import java.util.HashMap;
  */
 
 public class MessageTextViewHolder extends BaseMessageViewHolder {
+
+    private static final String TAG = "MessageTextViewHolder";
     EmojiTextView text;
     LinearLayout ll;
     private ImageView statusImg;
@@ -89,6 +94,13 @@ public class MessageTextViewHolder extends BaseMessageViewHolder {
     public void setData(Message message, int position, HashMap<String, User> myUsers, ArrayList<User> myUsersList) {
         super.setData(message, position, myUsers, myUsersList);
         this.message = message;
+
+       /* if(FileUtils.compareDate(FileUtils.getTime(msgTime), Helper.getDateTime(message.getDate()))){
+
+            Log.d(TAG, "setData: bigger");
+        } else {
+            Log.d(TAG, "setData: smaller");
+        }*/
 
         if (isMine()) {
             backGround.setBackgroundResource(R.drawable.shape_incoming_message);
@@ -209,7 +221,7 @@ public class MessageTextViewHolder extends BaseMessageViewHolder {
                     } else if (message1.getAttachmentType() == AttachmentTypes.LOCATION) {
                         try {
                             String staticMap = "https://maps.googleapis.com/maps/api/staticmap?center=%s,%s&zoom=16&size=512x512&format=png";
-                            String Key = "&key=" + context.getString(R.string.key);
+                            String Key = "&key=" + FileUtils.key(context);
                             String latitude, longitude;
                             JSONObject placeData = new JSONObject(message1.getAttachment().getData());
                             statusText.setText("Location");

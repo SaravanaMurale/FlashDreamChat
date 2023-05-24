@@ -27,6 +27,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.hermes.chat.R;
+import com.hermes.chat.utils.FileUtils;
 import com.hermes.chat.utils.OnSetMyLocation;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -118,7 +119,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         rlp.setMargins(0, 0, 30, 30);
 
         // Initialize Places.
-        Places.initialize(getApplicationContext(), getString(R.string.key));
+        String Key = "&key=" + FileUtils.key(MapActivity.this);
+        Places.initialize(getApplicationContext(), Key);
         // Create a new Places client instance.
         PlacesClient placesClient = Places.createClient(this);
 

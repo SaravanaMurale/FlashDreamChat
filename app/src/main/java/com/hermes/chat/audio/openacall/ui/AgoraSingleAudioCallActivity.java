@@ -129,8 +129,14 @@ public class AgoraSingleAudioCallActivity extends AgoraBaseActivity implements A
                 if (user == null)
                     user = FirebaseChatService.userHashMap.get(mJSONObject.get("toId"));
             }
-            url = user.getImage();
-            remoteUser.setText(user.getNameInPhone() != null ? user.getNameInPhone() : user.getId());
+            try
+            {
+                url = user.getImage();
+                remoteUser.setText(user.getNameInPhone() != null ? user.getNameInPhone() : user.getId());
+            } catch (Exception e){
+
+            }
+
 
             if (url != null && !url.isEmpty()) {
                 Picasso.get()

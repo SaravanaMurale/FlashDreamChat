@@ -93,6 +93,8 @@ public class Helper {
     public static final String REF_STATUS_NEW = "userstatus";
     public static final String REF_CALLS = "calls";
     public static final String REF_LANGUAGES = "languages";
+    public static final String REF_DISAPPEAR = "hours";
+    public static final String REF_KEY = "agora";
     public static final String BROADCAST_STATUS = "com.dreamguys.dreamschat.services.STATUS";
     public static String CURRENT_CHAT_ID;
     public static boolean CHAT_CAB = false;

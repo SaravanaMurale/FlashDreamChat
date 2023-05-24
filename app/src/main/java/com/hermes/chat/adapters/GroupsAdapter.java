@@ -114,7 +114,7 @@ public class GroupsAdapter extends RecyclerView.Adapter<GroupsAdapter.MyViewHold
             Picasso.get()
                     .load(group.getImage())
                     .tag(this)
-                    .placeholder(R.drawable.ic_logo_)
+                    .placeholder(R.mipmap.ic_app_icon_hermes)
                     .into(userImage);
 
             userName.setText(group.getName());

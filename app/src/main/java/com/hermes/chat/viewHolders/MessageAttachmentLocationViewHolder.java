@@ -15,6 +15,7 @@ import com.hermes.chat.interfaces.OnMessageItemClick;
 import com.hermes.chat.models.AttachmentTypes;
 import com.hermes.chat.models.Message;
 import com.hermes.chat.models.User;
+import com.hermes.chat.utils.FileUtils;
 import com.hermes.chat.utils.Helper;
 import com.squareup.picasso.Picasso;
 
@@ -109,7 +110,7 @@ public class MessageAttachmentLocationViewHolder extends BaseMessageViewHolder {
             address = placeData.getString("address");
             latitude = placeData.getString("latitude");
             longitude = placeData.getString("longitude");
-            Key = "&key=" + context.getString(R.string.key);
+            Key = "&key=" + FileUtils.key(context);
             Log.e("MAP_IMAGE_URL", String.format(staticMap, latitude, longitude) + Key);
 //            Glide.with(context).load(String.format(staticMap, latitude, longitude) + Key).into(locationImage);
             Picasso.get()
@@ -179,7 +180,7 @@ public class MessageAttachmentLocationViewHolder extends BaseMessageViewHolder {
                     } else if (message1.getAttachmentType() == AttachmentTypes.LOCATION) {
                         try {
                             String staticMap = "https://maps.googleapis.com/maps/api/staticmap?center=%s,%s&zoom=16&size=512x512&format=png";
-                            String Key = "&key=" + context.getString(R.string.key);
+                            String Key = "&key=" + FileUtils.key(context);
                             String latitude, longitude;
                             JSONObject placeData = new JSONObject(message1.getAttachment().getData());
                             statusText.setText(placeData.getString("address"));

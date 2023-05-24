@@ -4,9 +4,13 @@ import static com.hermes.chat.utils.Helper.GROUP_PREFIX;
 import static com.hermes.chat.utils.Helper.createRandomChannelName;
 import static com.hermes.chat.utils.Helper.getChatData;
 
+import static java.lang.System.currentTimeMillis;
+
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.os.Build.*;
 import android.app.DownloadManager;
 import android.content.BroadcastReceiver;
 import android.content.ClipData;
@@ -15,6 +19,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
 import android.database.Cursor;
@@ -34,8 +39,10 @@ import android.os.CountDownTimer;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Vibrator;
+import android.preference.PreferenceManager;
 import android.provider.ContactsContract;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -57,6 +64,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
@@ -64,6 +72,7 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.firebase.auth.FirebaseAuth;
 import com.hermes.chat.BaseApplication;
 import com.hermes.chat.R;
 import com.hermes.chat.adapters.MessageAdapter;
@@ -144,7 +153,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import io.realm.Realm;
 import io.realm.RealmChangeListener;
@@ -169,6 +180,7 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
     private static String EXTRA_DATA_USER = "extradatauser";
     private static String EXTRA_DATA_LIST = "extradatalist";
     private static String DELETE_TAG = "deletetag";
+    private static String deviceToken="", userType="";
     private MessageAdapter messageAdapter;
     private ArrayList<Message> dataList = new ArrayList<>();
     private RealmResults<Chat> queryResult;
@@ -229,6 +241,15 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
     private TextView attachContactTxt;
     private TextView attachLocationTxt;
     private TextView attachDocumentTxt;
+    SharedPreferences pref;
+    String msgTime;
+    File image;
+    AlertDialog.Builder builder;
+    String time="Turn off";
+    Boolean adminBlocked= false;
+    String userTime = "Turn off";
+    String[] blockList;
+
 
     //Download complete listener
     private BroadcastReceiver downloadCompleteReceiver = new BroadcastReceiver() {
@@ -288,6 +309,8 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
             status.setSelected(true);
             showTyping(user.isTyping());//Show typing
             int existingPos = MainActivity.myUsers.indexOf(valueUser);
+
+
             if (existingPos != -1) {
                 MainActivity.myUsers.set(existingPos, valueUser);
                 helper.setCacheMyUsers(MainActivity.myUsers);
@@ -339,20 +362,44 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+//        SharedPreferences prefs = getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
+
+        pref = this.getSharedPreferences(
+                String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
+        deviceToken = pref.getString("device", "");
+        userType = pref.getString("usertype", "");
+        builder = new AlertDialog.Builder(this);
+        msgTime = pref.getString("disappear", "");
+        adminBlocked = pref.getBoolean("adminBlock", false);
+        Gson gson = new Gson();
+        String jsonText = pref.getString("blockList", null);
+        blockList = gson.fromJson(jsonText, String[].class);
         setContentView(R.layout.activity_chats);
+        Log.d("userBlocked", "chat Activity: "+userMe.getAdminblock());
         // new CommentKeyBoardFix(this);
         this.helper = new Helper(ChatActivity.this);
         this.myUsersNameInPhoneMap = helper.getCacheMyUsers();
+        try
+        {
+            Log.d(TAG, "onCreate: deviceToken"+deviceToken);
         Intent intent = getIntent();
         if (intent.hasExtra(EXTRA_DATA_USER)) {
-            user = intent.getParcelableExtra(EXTRA_DATA_USER);
+
+                user = intent.getParcelableExtra(EXTRA_DATA_USER);
+
             Helper.CURRENT_CHAT_ID = user.getId();
+
+
         } else if (intent.hasExtra(EXTRA_DATA_GROUP)) {
             group = intent.getParcelableExtra(EXTRA_DATA_GROUP);
             Helper.CURRENT_CHAT_ID = group.getId();
         } else {
             finish();//temporary fix
         }
+        }catch (Exception e){
+
+        }
+
 
         initUi();
 
@@ -360,6 +407,7 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
         String nameText = null, statusText = null, imageUrl = null;
         if (user != null) {
             newMessage.setHint(getChatData(ChatActivity.this).getLblMsgHint());
+
             if (helper.getCacheMyUsers().containsKey(user.getNameToDisplay())) {
                 nameText = helper.getCacheMyUsers().get(user.getNameToDisplay()).getNameToDisplay();
             } else {
@@ -410,6 +458,33 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
         userOrGroupId = user != null ? user.getId() : group.getId();
 
         //setup recycler view
+      /*  ArrayList<Message> filter = new ArrayList<>();
+        for(int i=0;i>dataList.size();i++){
+            if(FileUtils.compareDate(FileUtils.getTime(msgTime),Helper.getDateTime(dataList.get(i).getDate()))){
+
+                Log.d(TAG, "setData: bigger");
+            } else {
+                Log.d(TAG, "setData: smaller");
+                filter.add(dataList.get(i));
+            }
+        }*/
+//        String finalTime = "Turn off";
+
+       /* try
+        {
+
+            if(!time.equalsIgnoreCase("Turn off")){
+                finalTime = time;
+            } else if (!userTime.equalsIgnoreCase("Turn off")){
+                finalTime = userTime;
+            } else {
+                finalTime = userTime;
+            }
+        }catch (Exception e){
+
+        }*/
+
+
         messageAdapter = new MessageAdapter(this, dataList, userMe.getId(), newMessage);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(messageAdapter);
@@ -548,6 +623,27 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
         findViewById(R.id.attachment_audio).setOnClickListener(this);
         findViewById(R.id.attachment_location).setOnClickListener(this);
         findViewById(R.id.attachment_document).setOnClickListener(this);
+
+        try
+        {
+            time = userMe.getDisappearing_message();
+            if(userMe.getDisappearing_list()!=null && userMe.getDisappearing_list().size()>0){
+                for (int i=0;i<userMe.getDisappearing_list().size();i++){
+                    for ( String key : userMe.getDisappearing_list().get(i).keySet() ) {
+                        Log.d(TAG, "userMe: "+key+ " === " +user.getId());
+                        if(key.trim().equals(user.getId().trim())){
+                            userTime = userMe.getDisappearing_list().get(i).get(user.getId());
+                            Log.d(TAG, "getDisappearing_list: "+userTime);
+                        }
+                        System.out.println(  );
+                    }
+                }
+            }
+        }catch (Exception e){
+
+        }
+
+
         newMessage.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -676,6 +772,90 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
 
     private void recordingStart() {
 
+        if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.R) {
+            storeRecording();
+        }else if (recordPermissionsAvailable()) {
+            storeRecording();
+        } else {
+            ActivityCompat.requestPermissions(this, permissionsRecord, REQUEST_PERMISSION_RECORD);
+        }
+    }
+
+    private void storeRecording() {
+
+        File recordFile = null;
+        boolean dirExists = false;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+
+            File file = getFilesDir();
+            String fileName = "/" + getString(R.string.app_name) + "/" + AttachmentTypes.getTypeName(AttachmentTypes.RECORDING) + "/.sent/";
+            file = new File(file, fileName);
+
+            dirExists = file.exists();
+            if (!dirExists)
+                dirExists = file.mkdirs();
+
+            //"/" + getString(R.string.app_name) + "/" + AttachmentTypes.getTypeName(AttachmentTypes.RECORDING) + "/.sent/" + System.currentTimeMillis() + ".mp3";
+
+            if (dirExists) {
+                try {
+                    recordFile = new File(file, System.currentTimeMillis() + ".mp3");
+
+                    if (!recordFile.exists())
+                        recordFile.createNewFile();
+                } catch (Exception e) {
+                    Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                    e.printStackTrace();
+                }
+
+            }
+
+        } else {
+
+            recordFile = new File(Environment.getExternalStorageDirectory(),
+                    "/" + getString(R.string.app_name) + "/" + AttachmentTypes.getTypeName(AttachmentTypes.RECORDING) + "/.sent/");
+            dirExists = recordFile.exists();
+
+            if (!dirExists)
+                dirExists = recordFile.mkdirs();
+            if (dirExists) {
+                try {
+                    recordFile = new File(Environment.getExternalStorageDirectory() +
+                            "/" + getString(R.string.app_name) + "/" + AttachmentTypes.getTypeName(AttachmentTypes.RECORDING) + "/.sent/", currentTimeMillis() + ".mp3");
+                    if (!recordFile.exists())
+                        recordFile.createNewFile();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+            }
+
+        }
+
+        try {
+
+            recordFilePath = recordFile.getAbsolutePath();
+            mRecorder = new MediaRecorder();
+            mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+            mRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+            mRecorder.setOutputFile(recordFilePath);
+            mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+            mRecorder.prepare();
+            mRecorder.start();
+            recordTimerStart(currentTimeMillis());
+        } catch (IOException e) {
+            e.printStackTrace();
+            mRecorder = null;
+        } catch (IllegalStateException ex) {
+            ex.printStackTrace();
+            mRecorder = null;
+        }
+
+    }
+
+    /*private void recordingStart() {
+
         Log.d(TAG, "recordingStart: ");
         if (recordPermissionsAvailable()) {
             File recordFile = new File(Environment.getExternalStorageDirectory(),
@@ -710,7 +890,7 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
         } else {
             ActivityCompat.requestPermissions(this, permissionsRecord, REQUEST_PERMISSION_RECORD);
         }
-    }
+    }*/
 
     private void recordTimerStart(final long currentTimeMillis) {
         Toast.makeText(this, getChatData(ChatActivity.this).getLblAttchRecording(),
@@ -760,43 +940,50 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
             databaseReference.addValueEventListener(new ValueEventListener() {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                    User users = dataSnapshot.getValue(User.class);
-                    userMe = helper.getLoggedInUser();
-                    if (users != null) {
-                        if (users.isOnline()) {
-                            if (users.getTimeStamp() != 0 && users.getBlockedUsersIds() != null
-                                    && !users.getBlockedUsersIds().contains(userMe.getId()) && userMe.getBlockedUsersIds() != null
-                                    && !userMe.getBlockedUsersIds().contains(users.getId()))
-                                userStatus.setText(getChatData(ChatActivity.this).getLblOnline());
-                            else
-                                userStatus.setText("");
-                        } else {
-                            if (users.getTimeStamp() != 0 && users.getBlockedUsersIds() != null
-                                    && !users.getBlockedUsersIds().contains(userMe.getId()) && userMe.getBlockedUsersIds() != null
-                                    && !userMe.getBlockedUsersIds().contains(users.getId()))
-                                userStatus.setText(getChatData(ChatActivity.this).getLblLastSeen()
-                                        + " " + Helper.getTimeAgoLastSeen(users.getTimeStamp(),
-                                        ChatActivity.this));
-                            else
-                                userStatus.setText("");
-                        }
+                    try
+                    {
+                        User users = dataSnapshot.getValue(User.class);
+                        userMe = helper.getLoggedInUser();
+                        if (users != null) {
+                            if (users.isOnline()) {
+                                if (users.getTimeStamp() != 0 && users.getBlockedUsersIds() != null
+                                        && !users.getBlockedUsersIds().contains(userMe.getId()) && userMe.getBlockedUsersIds() != null
+                                        && !userMe.getBlockedUsersIds().contains(users.getId()))
+                                    userStatus.setText(getChatData(ChatActivity.this).getLblOnline());
+                                else
+                                    userStatus.setText("");
+                            } else {
+                                if (users.getTimeStamp() != 0 && users.getBlockedUsersIds() != null
+                                        && !users.getBlockedUsersIds().contains(userMe.getId()) && userMe.getBlockedUsersIds() != null
+                                        && !userMe.getBlockedUsersIds().contains(users.getId()))
+                                    userStatus.setText(getChatData(ChatActivity.this).getLblLastSeen()
+                                            + " " + Helper.getTimeAgoLastSeen(users.getTimeStamp(),
+                                            ChatActivity.this));
+                                else
+                                    userStatus.setText("");
+                            }
 
-                        if (users.getImage() != null && !users.getImage().isEmpty() && users.getBlockedUsersIds() != null
-                                && !users.getBlockedUsersIds().contains(userMe.getId()))
-                            Picasso.get()
-                                    .load(users.getImage())
-                                    .tag(this)
-                                    .error(R.drawable.ic_avatar)
-                                    .placeholder(R.drawable.ic_avatar)
-                                    .into(usersImage);
-                        else
-                            Picasso.get()
-                                    .load(R.drawable.ic_avatar)
-                                    .tag(this)
-                                    .error(R.drawable.ic_avatar)
-                                    .placeholder(R.drawable.ic_avatar)
-                                    .into(usersImage);
+                            if (users.getImage() != null && !users.getImage().isEmpty() && users.getBlockedUsersIds() != null
+                                    && !users.getBlockedUsersIds().contains(userMe.getId()))
+                                Picasso.get()
+                                        .load(users.getImage())
+                                        .tag(this)
+                                        .error(R.drawable.ic_avatar)
+                                        .placeholder(R.drawable.ic_avatar)
+                                        .into(usersImage);
+                            else
+                                Picasso.get()
+                                        .load(R.drawable.ic_avatar)
+                                        .tag(this)
+                                        .error(R.drawable.ic_avatar)
+                                        .placeholder(R.drawable.ic_avatar)
+                                        .into(usersImage);
+                        }
+                    }catch (Exception e){
+
                     }
+
+
                 }
 
                 @Override
@@ -887,16 +1074,22 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
 
     @Override
     public void onBackPressed() {
-        if (Helper.CHAT_CAB)
-            undoSelectionPrepared();
-        else {
-            KeyboardUtil.getInstance(this).closeKeyboard();
-            if (Build.VERSION.SDK_INT > 21) {
-                finishAfterTransition();
-            } else {
-                finish();
+        userMe = helper.getLoggedInUser();
+        if(!userMe.getAdminblock()){
+            if (Helper.CHAT_CAB)
+                undoSelectionPrepared();
+            else {
+                KeyboardUtil.getInstance(this).closeKeyboard();
+                if (Build.VERSION.SDK_INT > 21) {
+                    finishAfterTransition();
+                } else {
+                    finish();
+                }
             }
+        } else {
+            checkBlocked();
         }
+
     }
 
     private void markAllReadForThisUser() {
@@ -1263,8 +1456,14 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.back_button:
-                Helper.closeKeyboard(this, view);
-                onBackPressed();
+                userMe = helper.getLoggedInUser();
+                if(!userMe.getAdminblock()){
+                    Helper.closeKeyboard(this, view);
+                    onBackPressed();
+                } else {
+                    checkBlocked();
+                }
+
                 break;
             case R.id.add_attachment:
                 Helper.closeKeyboard(this, view);
@@ -1302,35 +1501,69 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
                 }
                 break;
             case R.id.send:
-                if (!TextUtils.isEmpty(newMessage.getText().toString().trim()) && user != null) {
-                    userMe = helper.getLoggedInUser();
-                    if (userMe.getBlockedUsersIds() != null
-                            && !userMe.getBlockedUsersIds().contains(user.getId())) {
+                userMe = helper.getLoggedInUser();
+                if(!userMe.getAdminblock()){
+                    if (!TextUtils.isEmpty(newMessage.getText().toString().trim()) && user != null) {
+
+                        Log.d(TAG, "onClick: "+user.getDeviceToken()+"userBlocked "+userMe.getAdminblock());
+
+                        if (userMe.getBlockedUsersIds() != null
+                                && !userMe.getBlockedUsersIds().contains(user.getId())) {
+                       /* if(user.getBlockedUsersIds() !=null && !user.getBlockedUsersIds().contains(userMe.getId()) )
+                        {
+                            Toast.makeText(getApplicationContext(),"You cant message this user",Toast.LENGTH_LONG).show();
+                            newMessage.setText("");
+
+                        }*/
+                            sendMessage(newMessage.getText().toString(), AttachmentTypes.NONE_TEXT, null);
+                            newMessage.setText("");
+
+
+                        }else {
+
+                            FragmentManager manager = getSupportFragmentManager();
+                            Fragment frag = manager.findFragmentByTag(DELETE_TAG);
+                            if (frag != null) {
+                                manager.beginTransaction().remove(frag).commit();
+                            }
+
+                            Helper.unBlockAlert(user.getNameToDisplay(), userMe, ChatActivity.this,
+                                    helper, user.getId(), manager);
+                        }
+                    } else if (!TextUtils.isEmpty(newMessage.getText().toString().trim())) {
+//                    Log.d(TAG, "onClick: "+user.getDeviceToken());
                         sendMessage(newMessage.getText().toString(), AttachmentTypes.NONE_TEXT, null);
                         newMessage.setText("");
-                    } else {
-                        FragmentManager manager = getSupportFragmentManager();
-                        Fragment frag = manager.findFragmentByTag(DELETE_TAG);
-                        if (frag != null) {
-                            manager.beginTransaction().remove(frag).commit();
-                        }
-
-                        Helper.unBlockAlert(user.getNameToDisplay(), userMe, ChatActivity.this,
-                                helper, user.getId(), manager);
                     }
-                } else if (!TextUtils.isEmpty(newMessage.getText().toString().trim())) {
-                    sendMessage(newMessage.getText().toString(), AttachmentTypes.NONE_TEXT, null);
-                    newMessage.setText("");
+                } else {
+                    checkBlocked();
                 }
+
                 break;
             case R.id.chatToolbarContent:
-                if (toolbarContent.getVisibility() == View.VISIBLE) {
-                    if (user != null)
-                        startActivityForResult(ChatDetailActivity.newIntent(this, user), REQUEST_CODE_UPDATE_USER);
-                    else if (group != null)
-                        startActivityForResult(ChatDetailActivity.newIntent(this, group), REQUEST_CODE_UPDATE_GROUP);
+                userMe = helper.getLoggedInUser();
+                if(!userMe.getAdminblock()){
+                if (toolbarContent.getVisibility() == View.VISIBLE)
+                {
+                    try
+                    {
+                        if (user != null)
+                            startActivityForResult(ChatDetailActivity.newIntent(this, user), REQUEST_CODE_UPDATE_USER);
+                        else if (group != null)
+                            startActivityForResult(ChatDetailActivity.newIntent(this, group), REQUEST_CODE_UPDATE_GROUP);
+
+                    }
+                    catch (Exception e)
+                    {
+
+                    }
+                    break;
                 }
-                break;
+            } else {
+                    checkBlocked();
+                }
+
+
             case R.id.attachment_contact:
                 openContactPicker();
                 break;
@@ -1348,7 +1581,22 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
                     userMe = helper.getLoggedInUser();
                     if (userMe.getBlockedUsersIds() != null
                             && !userMe.getBlockedUsersIds().contains(user.getId())) {
-                        openImageClick();
+//                        openImageClick();
+                        if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.TIRAMISU) {
+                            chooseDialog();
+                        }else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            chooseDialog();
+                           /* if (FileUtils.checkPermission(ChatActivity.this)) {
+                                chooseDialog();
+                            }else {
+                                requestPermission();
+                            }*/
+                        }
+                        /*if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.R) {
+                            chooseDialog();
+                        }*/else {
+                            openImageClick();
+                        }
                     } else {
                         FragmentManager manager = getSupportFragmentManager();
                         Fragment frag = manager.findFragmentByTag(DELETE_TAG);
@@ -1360,7 +1608,23 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
                                 helper, user.getId(), manager);
                     }
                 } else {
-                    openImageClick();
+//                    openImageClick();
+                    if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.S) {
+                        chooseDialog();
+                    }else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
+
+                        chooseDialog();
+                        /*if (FileUtils.checkPermission(ChatActivity.this)) {
+                            chooseDialog();
+                        }else {
+                            requestPermission();
+                        }*/
+                    }
+                    /*if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.R) {
+                        chooseDialog();
+                    }*/else {
+                        openImageClick();
+                    }
                 }
 
                 /*AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
@@ -1394,20 +1658,82 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
                 openDocumentPicker();
                 break;
             case R.id.callVideo:
-                callIsVideo = true;
-                //   makeCall();
-                if (user != null) {
-                    checkBlock("Video call");
+                userMe = helper.getLoggedInUser();
+                if(!userMe.getAdminblock()){
+                    callIsVideo = true;
+                    //   makeCall();
+                    if (user != null) {
+                        checkBlock("Video call");
+                    }
+                } else {
+                    checkBlocked();
                 }
+
                 break;
             case R.id.callAudio:
+                userMe = helper.getLoggedInUser();
+                if(!userMe.getAdminblock()){
                 callIsVideo = false;
                 //   makeCall();
                 if (user != null) {
                     checkBlock("Audio call");
                 }
+                } else {
+                    checkBlocked();
+                }
                 break;
         }
+    }
+
+    public void checkBlocked()
+    {
+
+
+          /*  BaseApplication.getUserRef().child(userMe.getId()).addValueEventListener(new ValueEventListener()
+            {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot)
+                {
+                    User user= snapshot.getValue(User.class);
+                    if(user.getAdminblock()){*/
+        try {
+//                idChatRef.removeEventListener(valueEventListener);
+            helper.setCacheMyUsers(new ArrayList<>());
+            FirebaseAuth.getInstance().signOut();
+            LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(new Intent(Helper.BROADCAST_LOGOUT));
+//                                    sinchServiceInterface.stopClient();
+            helper.clearPhoneNumberForVerification();
+            helper.logout();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            Helper.getRealmInstance().executeTransaction(new Realm.Transaction() {
+                @Override
+                public void execute(Realm realm) {
+                    realm.deleteAll();
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        SharedPreferences prefs = getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
+        prefs.edit().putString("LoggedIn","false");
+        Intent mIntent = new Intent(ChatActivity.this, UserNameSignInActivity.class);
+        mIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(mIntent);
+        finish();
+                   /* }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error)
+                {
+
+                }
+            });*/
+
+
     }
 
     private void checkBlock(String type) {
@@ -1466,10 +1792,10 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
                         "channel_name=" + channel + "&caller=" + userMe.getId() + "&receiver=" + user.getId());*/
                     } else {
                         registration_ids = new String[1];
-                        registration_ids[0] = user.getDeviceToken();
+                        registration_ids[0] = deviceToken;
 
-                        if (user.getOsType() != null && !user.getOsType().isEmpty() && user.getOsType().equalsIgnoreCase("iOS")) {
-                            data = new Data(type, userMe.getId(), " ", userMe.getId(), user.getId(),
+                        if (userType != null && !userType.isEmpty() && userType.equalsIgnoreCase("iOS")) {
+                            data = new Data(type, user.getName(), " ", userMe.getId(), user.getId(),
                                     "", channel);
                             com.hermes.chat.pushnotification.Message notificationTask =
                                     new com.hermes.chat.pushnotification.Message(registration_ids,
@@ -1480,6 +1806,9 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
                         } else {
                             data = new Data(type, channel, " ", userMe.getId(), user.getId(),
                                     "", "");
+//                            New changes
+                           /* data = new Data(type, user.getName(), "", userMe.getId(),  user.getId(),
+                                    "", channel);*/
                             com.hermes.chat.pushnotification.Message notificationTask =
                                     new com.hermes.chat.pushnotification.Message(registration_ids,
                                             "", data,
@@ -1576,6 +1905,8 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
         message.setAttachment(attachment);
         message.setBody(body);
         message.setDate(System.currentTimeMillis());
+
+        Log.d(TAG, "prepareMessage: "+time+" === "+userTime+" =updated= "+message.getDisappearing_message());
         message.setSenderId(userMe.getId());
         message.setSenderName(userMe.getName());
         message.setSent(false);
@@ -1637,7 +1968,29 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
         //Create message object
         String body = "";
         String[] registration_ids = new String[]{};
+        boolean isBlocked = false;
+
+        if(adminBlocked){
+            isBlocked = true;
+        }
+
+        if(blockList !=null && blockList.length>0){
+            for(int i =0;i<blockList.length;i++){
+                if(blockList[i].equalsIgnoreCase(userMe.getId())){
+                    isBlocked = true;
+                }
+            }
+        }
+
         Message message = new Message();
+        if(!userTime.equalsIgnoreCase("Turn off")){
+           message.setDisappearing_message(userTime);
+        } else if (!time.equalsIgnoreCase("Turn off")){
+                message.setDisappearing_message(time);
+        } else {
+            message.setDisappearing_message(userTime);
+        }
+        Log.d(TAG, "sendMessage: "+time+" === "+userTime+" =updated= "+message.getDisappearing_message());
         message.setAttachmentType(attachmentType);
         if (attachmentType != AttachmentTypes.NONE_TEXT)
             message.setAttachment(attachment);
@@ -1653,15 +2006,20 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
         message.setId(chatRef.child(chatChild).push().getKey());
         message.setReplyId(replyId);
         message.setDelete("");
+
         if (attachmentType == AttachmentTypes.LOCATION)
             body = getString(R.string.location);
         else
             body = messageBody;
 
-        if (user != null && user.getBlockedUsersIds() != null
-                && user.getBlockedUsersIds().contains(userMe.getId())) {
+        if (isBlocked) {
             message.setBlocked(true);
         }
+
+        /*if (user != null && user.getBlockedUsersIds() != null
+                && user.getBlockedUsersIds().contains(userMe.getId())) {
+            message.setBlocked(true);
+        }*/
         try {
             if (group != null && group.getUserIds() != null) {
                 ArrayList<String> userIds = new ArrayList<>();
@@ -1692,6 +2050,7 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
 
                             new SendFirebaseNotification(ChatActivity.this, notificationTask).triggerMessage();
                         } else {
+                            Log.d(TAG, "sendMessage: "+myUsersNameInPhoneMap.get(userIds.get(i)).getDeviceToken());
                             com.hermes.chat.pushnotification.Message notificationTask =
                                     new com.hermes.chat.pushnotification.Message(new String[]{myUsersNameInPhoneMap.get(userIds.get(i)).getDeviceToken()},
                                             "", data,
@@ -1702,26 +2061,32 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
                     }
                 }
             } else {
-                registration_ids = new String[1];
-                registration_ids[0] = user.getDeviceToken();
+                if(!isBlocked){
+                    registration_ids = new String[1];
+                    registration_ids[0] = deviceToken;
+                    Log.d(TAG, "sendMessage: "+deviceToken);
 
-                Notification notification = new Notification(userMe.getId(), body);
-                Data data = new Data(userMe.getId(), body, " ");
-                if (user.getOsType() != null && !user.getOsType().isEmpty() && user.getOsType().equalsIgnoreCase("iOS")) {
-                    com.hermes.chat.pushnotification.Message notificationTask =
-                            new com.hermes.chat.pushnotification.Message(registration_ids,
-                                    "", data, notification,
-                                    new Aps(" ", " "));
-                    if (!message.isBlocked())
-                        new SendFirebaseNotification(ChatActivity.this, notificationTask).triggerMessage();
-                } else {
-                    com.hermes.chat.pushnotification.Message notificationTask =
-                            new com.hermes.chat.pushnotification.Message(registration_ids,
-                                    "", data,
-                                    new Aps(" ", " "));
-                    if (!message.isBlocked())
-                        new SendFirebaseNotification(ChatActivity.this, notificationTask).triggerMessage();
+                    Notification notification = new Notification(userMe.getId(), body);
+                    Data data = new Data(userMe.getId(), body, " ");
+                    if (userType != null && !userType.isEmpty() && userType.equalsIgnoreCase("iOS")) {
+                        com.hermes.chat.pushnotification.Message notificationTask =
+                                new com.hermes.chat.pushnotification.Message(registration_ids,
+                                        "", data, notification,
+                                        new Aps(" ", " "));
+                        if (!message.isBlocked())
+                            new SendFirebaseNotification(ChatActivity.this, notificationTask).triggerMessage();
+                    } else {
+                        com.hermes.chat.pushnotification.Message notificationTask =
+                                new com.hermes.chat.pushnotification.Message(registration_ids,
+                                        "", data,
+                                        new Aps(" ", " "));
+                        if (!message.isBlocked())
+                            new SendFirebaseNotification(ChatActivity.this, notificationTask).triggerMessage();
+                    }
+                }else {
+
                 }
+
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -1780,17 +2145,36 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
     }
 
     void openAudioPicker() {
-        if (permissionsAvailable(permissionsStorage)) {
-            audioPicker = new AudioPicker(this);
-            audioPicker.setAudioPickerCallback(this);
-            audioPicker.pickAudio();
-        } else {
-            ActivityCompat.requestPermissions(this, permissionsStorage, 25);
+        if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.R) {
+            Intent audio = new Intent();
+            audio.setType("audio/*");
+            audio.setAction(Intent.ACTION_OPEN_DOCUMENT);
+            startActivityForResult(audio, 1539);
+        }else {
+            if (permissionsAvailable(permissionsStorage)) {
+                audioPicker = new AudioPicker(this);
+                audioPicker.setAudioPickerCallback(this);
+                audioPicker.pickAudio();
+            } else {
+                ActivityCompat.requestPermissions(this, permissionsStorage, 25);
+            }
         }
     }
 
     public void openImagePick() {
-        openImageClick();
+
+        if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.TIRAMISU) {
+            Intent intent = new Intent(MediaStore.ACTION_PICK_IMAGES);
+            intent.setType("image/*");
+            startActivityForResult(intent, 1537);
+        }else if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.R){
+            Intent intent = new Intent();
+            intent.setType("image/*");
+            intent.setAction(Intent.ACTION_GET_CONTENT);
+            startActivityForResult(intent, 1537);
+        }else {
+            openImageClick();
+        }
        /* if (permissionsAvailable(permissionsStorage)) {
             imagePicker = new ImagePicker(this);
             imagePicker.shouldGenerateMetadata(true);
@@ -1823,25 +2207,47 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
     }
 
     public void openDocumentPicker() {
-        if (permissionsAvailable(permissionsStorage)) {
-            filePicker = new FilePicker(this);
-            filePicker.setFilePickerCallback(this);
-            filePicker.setMimeType("application/pdf");
-            filePicker.pickFile();
-        } else {
-            ActivityCompat.requestPermissions(this, permissionsStorage, 58);
+
+        if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.R) {
+            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+            String[] mimeTypes = {"application/pdf"};
+            intent.setType("application/pdf");
+            intent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
+            startActivityForResult(intent, 1540);
+        }else {
+            if (permissionsAvailable(permissionsStorage)) {
+                filePicker = new FilePicker(this);
+                filePicker.setFilePickerCallback(this);
+                filePicker.setMimeType("application/pdf");
+                filePicker.pickFile();
+            } else {
+                ActivityCompat.requestPermissions(this, permissionsStorage, 58);
+            }
         }
     }
 
     private void openVideoPicker() {
-        if (permissionsAvailable(permissionsStorage)) {
-            videoPicker = new VideoPicker(this);
-            videoPicker.shouldGenerateMetadata(true);
-            videoPicker.shouldGeneratePreviewImages(true);
-            videoPicker.setVideoPickerCallback(this);
-            videoPicker.pickVideo();
-        } else {
-            ActivityCompat.requestPermissions(this, permissionsStorage, 41);
+        if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.TIRAMISU) {
+            Intent intent = new Intent(MediaStore.ACTION_PICK_IMAGES);
+            intent.setType("video/*");
+            startActivityForResult(intent, 1538);
+        }else if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.R){
+            Intent intent = new Intent();
+            intent.setType("video/*");
+            intent.setAction(Intent.ACTION_GET_CONTENT);
+            startActivityForResult(intent, 1538);
+        }else {
+
+            if (permissionsAvailable(permissionsStorage)) {
+                videoPicker = new VideoPicker(this);
+                videoPicker.shouldGenerateMetadata(true);
+                videoPicker.shouldGeneratePreviewImages(true);
+                videoPicker.setVideoPickerCallback(this);
+                videoPicker.pickVideo();
+            } else {
+                ActivityCompat.requestPermissions(this, permissionsStorage, 41);
+            }
+
         }
     }
 
@@ -1917,6 +2323,29 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
                 case Picker.PICK_AUDIO:
                     audioPicker.submit(data);
                     break;
+
+                case 1537:
+                    Log.d("OS_13","IMAGE");
+                    onSelectFromGalleryResult(data,"Image");
+                    break;
+                case 1515:
+                    Log.d("OS_13","IMAGE");
+                    onSelectFromGalleryResult(data,"Camera");
+                    break;
+                case 1538:
+                    Log.d("OS_13","VIDEO");
+                    onSelectFromGalleryResult(data,"Video");
+                    break;
+                case 1539:
+                    Log.d("OS_13","AUDIO");
+                    onSelectFromGalleryResult(data,"Audio");
+                    break;
+                case 1540:
+                    onSelectFromGalleryResult(data,"Docs");
+                    break;
+                case 201:
+                    androidRGallery();
+                    break;
             }
         }
         if (resultCode == RESULT_OK) {
@@ -1988,6 +2417,133 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
             }
         }
     }
+    public String getDeviceName() {
+        String manufacturer = Build.MANUFACTURER;
+        String model = Build.MODEL;
+        if (model.toLowerCase().startsWith(manufacturer.toLowerCase())) {
+            return capitalize(model);
+        } else {
+            return capitalize(manufacturer) + " " + model;
+        }
+    }
+
+    private String capitalize(String s) {
+        if (s == null || s.length() == 0) {
+            return "";
+        }
+        char first = s.charAt(0);
+        if (Character.isUpperCase(first)) {
+            return s;
+        } else {
+            return Character.toUpperCase(first) + s.substring(1);
+        }
+    }
+
+    private void onSelectFromGalleryResult(Intent data,String type) {
+        try {
+
+            if (data != null || getDeviceName().contains("samsung")) {
+
+                Uri uri;
+                String path = "";
+
+                if (type.equalsIgnoreCase("Camera")) {
+                    //uri = Uri.fromFile(image);
+                    path = image.getAbsolutePath();
+                }else {
+                    path = FileUtils.getRealPathFromURI(this,data.getData());
+                }
+
+                switch (type){
+                    case "Image":
+                    case "Camera":
+                        uploadImage(path);
+                        break;
+                    case "Video":
+                        if (FileUtils.getFileSize(path) < 16777216) {
+                            uploadThumbnail(path);
+                        } else {
+                            Toast.makeText(this, "Maximum limit is 16 MB", Toast.LENGTH_LONG).show();
+                        }
+                        break;
+                    case "Audio":
+                        newFileUploadTask(path, AttachmentTypes.AUDIO, null);
+                        break;
+                    case "Docs":
+                        newFileUploadTask(path, AttachmentTypes.DOCUMENT, null);
+                        break;
+
+                }
+            }else {
+                if (type.equalsIgnoreCase("Camera")) {
+                    uploadImage(image.getAbsolutePath());
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    /*private void onSelectFromGalleryResult(Intent data,String type) {
+        try {
+
+
+            Log.d(TAG, "onSelectFromGalleryResult: "+getDeviceName());
+
+            if (data != null && data.getData() != null || getDeviceName().equalsIgnoreCase("samsung")) {
+
+                Uri uri;
+                String path = "";
+
+                if (type.equalsIgnoreCase("Camera")) {
+                    //uri = Uri.fromFile(image);
+                    path = data.getData().getPath();
+//                    path = data.getData().getPath();
+                   *//* if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.R){
+                        path = data.getData().getPath();
+                    } else {
+                        path = image.getAbsolutePath();
+                    }*//*
+
+                }else {
+                    path = FileUtils.getRealPathFromURI(this,data.getData());
+                }
+
+                switch (type){
+                    case "Image":
+                    case "Camera":
+                        uploadImage(path);
+                        break;
+                    case "Video":
+                        if (FileUtils.getFileSize(path) < 16777216) {
+                            uploadThumbnail(path);
+                        } else {
+                            Toast.makeText(this, "Maximum limit is 16 MB", Toast.LENGTH_LONG).show();
+                        }
+                        break;
+                    case "Audio":
+                        newFileUploadTask(path, AttachmentTypes.AUDIO, null);
+                        break;
+                    case "Docs":
+                        newFileUploadTask(path, AttachmentTypes.DOCUMENT, null);
+                        break;
+
+                }
+            } else
+            {
+                if (type.equalsIgnoreCase("Camera"))
+                {
+                    uploadImage(image.getAbsolutePath());
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }*/
 
     private void getSendVCard(Uri contactsData) {
         @SuppressLint("StaticFieldLeak") AsyncTask<Cursor, Void, File> task = new AsyncTask<Cursor, Void, File>() {
@@ -1996,7 +2552,14 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
             @Override
             protected File doInBackground(Cursor... params) {
                 Cursor cursor = params[0];
-                File toSend = new File(Environment.getExternalStorageDirectory(), "/" + getString(R.string.app_name) + "/Contact/.sent/");
+                /*File toSend = new File(Environment.getExternalStorageDirectory(), "/" + getString(R.string.app_name) + "/Contact/.sent/");*/
+                File toSend = null; //new File(Environment.getExternalStorageDirectory(), "/" + getString(R.string.app_name) + "/Contact/.sent/");
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    toSend = new File(getFilesDir(), "/" + getString(R.string.app_name) + "/Contact/.sent/");
+                }else {
+                    toSend = new File(Environment.getExternalStorageDirectory(), "/" + getString(R.string.app_name) + "/Contact/.sent/");
+                }
                 if (cursor != null && !cursor.isClosed()) {
                     cursor.getCount();
                     if (cursor.moveToFirst()) {
@@ -2012,7 +2575,12 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
                                     dirExists = toSend.mkdirs();
                                 if (dirExists) {
                                     try {
-                                        toSend = new File(Environment.getExternalStorageDirectory() + "/" + getString(R.string.app_name) + "/Contact/.sent/", name + ".vcf");
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                            toSend = new File(getFilesDir() + "/" + getString(R.string.app_name) + "/Contact/.sent/", name + ".vcf");
+                                        }else {
+                                            toSend = new File(Environment.getExternalStorageDirectory() + "/" + getString(R.string.app_name) + "/Contact/.sent/", name + ".vcf");
+                                        }
+//                                        toSend = new File(Environment.getExternalStorageDirectory() + "/" + getString(R.string.app_name) + "/Contact/.sent/", name + ".vcf");
                                         boolean fileExists = toSend.exists();
                                         if (!fileExists)
                                             fileExists = toSend.createNewFile();
@@ -2105,6 +2673,7 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
                         return ThumbnailUtils.createVideoThumbnail(params[0], MediaStore.Video.Thumbnails.MINI_KIND);
                     }
 
+                    @SuppressLint("WrongThread")
                     @Override
                     protected void onPostExecute(Bitmap bitmap) {
                         super.onPostExecute(bitmap);
@@ -2166,12 +2735,22 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
         preSendAttachment.setBytesCount(fileToUpload.length());
         preSendAttachment.setUrl("loading");
         prepareMessage(null, attachmentType, preSendAttachment);
+        String timeFinal="Turn off";
+        if(!userTime.equalsIgnoreCase("Turn off")){
+            timeFinal = userTime;
+        } else if (!time.equalsIgnoreCase("Turn off")){
+            timeFinal = time;
+        } else {
+            timeFinal = userTime;
+        }
 
         checkAndCopy("/" + getString(R.string.app_name) + "/" +
                 AttachmentTypes.getTypeName(attachmentType) + "/.sent/", fileToUpload);//Make a copy
 
         Intent intent = new Intent(Helper.UPLOAD_AND_SEND);
         intent.putExtra("attachment", attachment);
+        intent.putExtra("disappear",timeFinal);
+        intent.putExtra("adminBlk",adminBlocked);
         if (group != null) {
             intent.putExtra("chatDataGroup", group);
         }
@@ -2218,6 +2797,7 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
 
     @Override
     public void OnMessageLongClick(Message message, int position) {
+        Log.d(TAG, "OnMessageLongClick: ");
         if (!Helper.CHAT_CAB && RealmObject.isValid(message)) {//Prepare selection if not in selection mode
             prepareToSelect();
             message.setSelected(true);
@@ -2251,13 +2831,39 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
 
     public static Intent newIntent(Context context, ArrayList<Message> forwardMessages, User
             user) {
+
+        Log.d(TAG, "newIntent: "+user.getDeviceToken());
         //intent contains user to chat with and message forward list if any.
         Intent intent = new Intent(context, ChatActivity.class);
         intent.putExtra(EXTRA_DATA_USER, user);
+        SharedPreferences prefs = context.getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
+        prefs.edit().putString("device", user.getDeviceToken()).apply();
+        prefs.edit().putString("usertype", user.getOsType()).apply();
+
+        prefs.edit().putBoolean("adminBlock", user.getAdminblock()).apply();
+
+//        intent.putExtra("device", user.getDeviceToken());
         //intent.removeExtra(EXTRA_DATA_GROUP);
         if (forwardMessages == null)
             forwardMessages = new ArrayList<>();
         intent.putParcelableArrayListExtra(EXTRA_DATA_LIST, forwardMessages);
+
+
+        if(user.getBlockedUsersIds() != null && user.getBlockedUsersIds().size()>0){
+
+            Gson gson = new Gson();
+            List<String> blockList = new ArrayList<String>(user.getBlockedUsersIds());
+            String jsonText = gson.toJson(blockList);
+            prefs.edit().putString("blockList", jsonText).apply();
+            prefs.edit().apply();
+        } else {
+            Gson gson = new Gson();
+            List<String> blockList = new ArrayList<String>();
+            String jsonText = gson.toJson(blockList);
+            prefs.edit().putString("blockList", jsonText).apply();
+            prefs.edit().apply();
+        }
+
         return intent;
     }
 
@@ -2502,7 +3108,7 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
                 } else if (dataList.get(viewHolder.getAdapterPosition()).getAttachmentType() == AttachmentTypes.LOCATION) {
                     try {
                         String staticMap = "https://maps.googleapis.com/maps/api/staticmap?center=%s,%s&zoom=16&size=512x512&format=png";
-                        String Key = "&key=" + getString(R.string.key);
+                        String Key = "&key=" + FileUtils.key(ChatActivity.this);
                         String latitude, longitude;
                         JSONObject placeData = new JSONObject(dataList.get(viewHolder.getAdapterPosition()).getAttachment().getData());
                         replyName.setText(nameToDisplay + "\n" + placeData.getString("address"));
@@ -2618,5 +3224,81 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
         return chatChild;
     }
 
+    private void chooseDialog() {
+        builder.setMessage("Choose Image Picking Options") .setTitle("Choose Image")
+                .setCancelable(true)
+                .setPositiveButton("Gallery", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.cancel();
+                        if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.TIRAMISU) {
+                            Intent intent = new Intent(MediaStore.ACTION_PICK_IMAGES);
+                            intent.setType("image/*");
+                            startActivityForResult(intent, 1537);
+                        }/*else if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.R){*/
+                            /*Intent intent = new Intent();
+                            intent.setType("image/*");
+                            intent.setAction(Intent.ACTION_GET_CONTENT);
+                            startActivityForResult(intent, 1537);*/
+                        else {
+                            androidRGallery();
+                        }
 
+                    }
+                })
+                .setNegativeButton("Camera", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.cancel();
+
+                        File path = new File(getFilesDir(), "/FlashChat/Camera");
+                        if (!path.exists()) path.mkdirs();
+                        image = new File(path, FileUtils.getFileName());
+                        Uri imageUri = FileProvider.getUriForFile(getApplicationContext(), getString(R.string.authority), image);
+                        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                      /*  Bundle newExtras = new Bundle();
+                        if (imageUri != null) {
+                            newExtras.putParcelable(MediaStore.EXTRA_OUTPUT, imageUri);
+                        } else {
+                            newExtras.putBoolean("return-data", true);
+                        }*/
+                        intent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
+//                        intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                        //intent.putExtra(MediaStore.EXTRA_OUTPUT);
+                       /* if(intent.resolveActivity(getPackageManager()) != null) {
+                            startActivityForResult(intent,
+                                    1515);
+                        }*/
+                        startActivityForResult(intent, 1515);
+                    }
+                });
+        //Creating dialog box
+        AlertDialog alert = builder.create();
+        alert.show();
+    }
+
+    private void requestPermission(){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R){
+            //Android is 11(R) or above
+            try {
+
+                Intent intent = new Intent();
+                intent.setAction(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+                Uri uri = Uri.fromParts("package", this.getPackageName(), null);
+                intent.setData(uri);
+                startActivityForResult(intent,201);
+            }
+            catch (Exception e){
+                Intent intent = new Intent();
+                intent.setAction(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+                startActivityForResult(intent,201);
+            }
+        }
+
+    }
+
+    public void androidRGallery() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("image/*");
+        intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        startActivityForResult(intent,1537);
+    }
 }

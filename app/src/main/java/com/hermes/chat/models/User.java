@@ -1,11 +1,17 @@
 package com.hermes.chat.models;
 
+import android.os.Build;
 import android.os.Parcel;
 import android.os.Parcelable;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 
 import com.google.firebase.database.Exclude;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import io.realm.RealmList;
 import io.realm.RealmModel;
@@ -27,6 +33,7 @@ public class User implements Parcelable, RealmModel {
      private boolean typing;*/
     @Ignore
     private String typing;
+//    HashMap<String,String> disAppearMap = new HashMap();
 
     @Ignore
     @Exclude
@@ -44,12 +51,19 @@ public class User implements Parcelable, RealmModel {
     public RealmList<solochat> solochat = new RealmList<>();
     private RealmList<String> blockedUsersIds = new RealmList<>();
     private RealmList<String> connectList = new RealmList<>();
+    @Exclude
+    @Ignore
+    @NonNull
+    public RealmList<HashMap<String,String>> disappearing_list = new RealmList<>();
+//    private RealmList<disappear> connectList = new RealmList<>();
     private String deviceToken = " ";
     private String osType = " ";
     private String username = "";
     private String password = "";
     private String email = "";
+    private String disappearing_message = "";
     private int is_new;
+    private boolean adminblock;
 
 
     @Ignore
@@ -62,6 +76,7 @@ public class User implements Parcelable, RealmModel {
 
 
 
+    @RequiresApi(api = Build.VERSION_CODES.Q)
     protected User(Parcel in) {
         online = in.readByte() != 0;
         nameInPhone = in.readString();
@@ -80,18 +95,25 @@ public class User implements Parcelable, RealmModel {
         this.blockedUsersIds.addAll(blockedUsersIds);
         ArrayList<String> connect_list = in.createStringArrayList();
         this.connectList = new RealmList<>();
-        this.connectList.addAll(connect_list);
+        if(connect_list!=null){
+            this.connectList.addAll(connect_list);
+        }
+
+//        this.disappearing_list = (HashMap<String, String>)  in.readParcelableList();
         deviceToken = in.readString();
         osType = in.readString();
         profileName = in.readString();
         username = in.readString();
         password = in.readString();
         email = in.readString();
+        disappearing_message = in.readString();
         call_status = in.readByte() != 0;
         webqrcode = in.readString();
+        adminblock = in.readBoolean();
     }
 
     public static final Creator<User> CREATOR = new Creator<User>() {
+        @RequiresApi(api = Build.VERSION_CODES.Q)
         @Override
         public User createFromParcel(Parcel in) {
             return new User(in);
@@ -150,6 +172,16 @@ public class User implements Parcelable, RealmModel {
         return id.equals(user.id);
     }
 
+    public RealmList<HashMap<String,String>> getDisappearing_list()
+    {
+        return disappearing_list;
+    }
+
+    public void setDisappearing_list(ArrayList<HashMap<String,String>> disappearing_list)
+    {
+        this.disappearing_list.addAll(disappearing_list);
+    }
+
     public RealmList<String> getConnect_list()
     {
         return connectList;
@@ -158,6 +190,16 @@ public class User implements Parcelable, RealmModel {
     public void setConnect_list(ArrayList<String> connect_list)
     {
         this.connectList.addAll(connect_list);
+    }
+
+    public String getDisappearing_message()
+    {
+        return disappearing_message;
+    }
+
+    public void setDisappearing_message(String disappearing_message)
+    {
+        this.disappearing_message = disappearing_message;
     }
 
     public int getIs_new()
@@ -337,6 +379,17 @@ public class User implements Parcelable, RealmModel {
         this.webqrcode = webqrcode;
     }
 
+    public boolean getAdminblock()
+    {
+        return adminblock;
+    }
+
+    public void setAdminblock(boolean adminblock)
+    {
+        this.adminblock = adminblock;
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.Q)
     @Override
     public void writeToParcel(Parcel parcel, int i) {
         parcel.writeByte((byte) (online ? 1 : 0));
@@ -350,6 +403,7 @@ public class User implements Parcelable, RealmModel {
         parcel.writeString(status);
         parcel.writeString(image);
         parcel.writeString(wallpaper);
+        parcel.writeString(disappearing_message);
         parcel.writeLong(timestamp);
         ArrayList<String> blockedIds = new ArrayList<>();
         if (this.blockedUsersIds != null) {
@@ -358,6 +412,7 @@ public class User implements Parcelable, RealmModel {
         }
 //        parcel.writeList(connectList);
 //        parcel.writeStringList(connectList);
+//        parcel.writeSerializable(this.disappearing_list);
         ArrayList<String> connect_list = new ArrayList<>();
         if (this.connectList != null) {
             connect_list.addAll(this.connectList);
@@ -370,6 +425,7 @@ public class User implements Parcelable, RealmModel {
         parcel.writeString(password);
         parcel.writeString(email);
         parcel.writeByte((byte) (call_status ? 1 : 0));
+        parcel.writeBoolean(adminblock);
     }
 
     public static boolean validate(User user) {

@@ -26,7 +26,7 @@
                 android:layout_marginStart="@dimen/_10sdp"
                 android:layout_marginTop="@dimen/_15sdp"
                 android:text="@string/missed_call"
-                android:textColor="@color/border_red" />
+                android:textColor="@color/colorPrimary" />
 
             <com.hermes.chat.views.MyRecyclerView
                 android:id="@+id/missedRecyclerView"

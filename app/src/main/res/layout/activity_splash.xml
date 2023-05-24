@@ -10,7 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scaleType="centerCrop"
-        android:src="@drawable/icon_splash" />
+        android:src="@drawable/ic_splash_flash" />
 
     <TextView
         android:id="@+id/layout_splash_loading_txt"
@@ -44,7 +44,7 @@
         android:layout_marginTop="@dimen/_10sdp"
         android:layout_marginRight="@dimen/_20sdp"
         android:layout_marginBottom="@dimen/_20sdp"
-        app:ahp_backgroundColor="#6BC7F9"
+        app:ahp_backgroundColor="@color/colorPrimary"
         app:ahp_progressColor="@android:color/white" />
 
     <TextView

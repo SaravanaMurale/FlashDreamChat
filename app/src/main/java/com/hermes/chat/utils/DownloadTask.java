@@ -9,6 +9,7 @@ import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Environment;
 import androidx.core.content.FileProvider;
 import android.util.Log;
@@ -164,10 +165,24 @@ public class DownloadTask {
             try {
                 //Get File if SD card is present
                 if (isSDCardPresent()) {
-                    //  apkStorage = new File(Environment.getExternalStorageDirectory() + "/" + "doccure");
-                    apkStorage = new File(Environment.getExternalStorageDirectory() + "/" +
-                            context.getString(R.string.app_name) + "/" + AttachmentTypes.getTypeName(
-                            attachmentType));
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+
+                        apkStorage = context.getFilesDir();
+                        String fileName = "/" + context.getString(R.string.app_name) + "/" + AttachmentTypes.getTypeName(
+                                attachmentType);
+
+                        apkStorage = new File(apkStorage,fileName);
+
+                    }else {
+
+                        //  apkStorage = new File(Environment.getExternalStorageDirectory() + "/" + "doccure");
+                        apkStorage = new File(Environment.getExternalStorageDirectory() + "/" +
+                                context.getString(R.string.app_name) + "/" + AttachmentTypes.getTypeName(
+                                attachmentType));
+
+                    }
+
                 } else
                     Toast.makeText(context, "Oops!! There is no SD Card.", Toast.LENGTH_SHORT).show();
 

@@ -2,7 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/chat_bg_inner"
+    android:background="@drawable/chat_bg_inner_flash_final"
     android:orientation="vertical"
     android:weightSum="2">
 
@@ -227,6 +227,7 @@
                     </RelativeLayout>
 
                     <RelativeLayout
+                        android:visibility="gone"
                         android:layout_width="match_parent"
                         android:layout_height="55dp"
                         android:layout_marginTop="@dimen/_10sdp"
@@ -268,6 +269,50 @@
 
                         </RelativeLayout>
                     </RelativeLayout>
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="55dp"
+                        android:layout_marginTop="@dimen/_10sdp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/disappearing_message"
+                            android:layout_width="match_parent"
+                            android:layout_height="55dp"
+                            android:layout_marginStart="@dimen/_10sdp"
+                            android:background="@drawable/settings_item_border"
+                            android:drawablePadding="16dp"
+                            android:gravity="start|center"
+                            android:paddingLeft="@dimen/_40sdp"
+                            android:paddingRight="4dp"
+                            android:text="Disappearing Message"
+                            android:textColor="@color/textColor4"
+                            android:textSize="16sp" />
+
+                        <RelativeLayout
+                            android:layout_width="45dp"
+                            android:layout_height="45dp"
+                            android:layout_alignParentStart="true"
+                            android:layout_centerInParent="true">
+
+                            <com.hermes.chat.status.CircleView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:layout_alignParentStart="true"
+                                android:layout_centerInParent="true"
+                                android:src="@color/colorPrimary" />
+
+                            <ImageView
+                                android:layout_width="26dp"
+                                android:layout_height="26dp"
+                                android:layout_centerInParent="true"
+                                android:src="@drawable/ic_message_24dp"
+                                android:tint="@android:color/white" />
+
+                        </RelativeLayout>
+                    </RelativeLayout>
+
 
                     <RelativeLayout
                         android:layout_width="match_parent"

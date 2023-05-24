@@ -27,6 +27,7 @@ public class Message implements Parcelable, RealmModel {
     private RealmList<String> grpDeletedMsgIds;
     private boolean isBlocked = false;
     private RealmList<String> readUserIds;
+    private  String disappearing_message;
 
     @Ignore
     private boolean selected;
@@ -62,6 +63,7 @@ public class Message implements Parcelable, RealmModel {
         ArrayList<String> readUserIds1 = in.createStringArrayList();
         readUserIds = new RealmList<>();
         readUserIds.addAll(readUserIds1);
+        disappearing_message = in.readString();
 
     }
 
@@ -246,6 +248,16 @@ public class Message implements Parcelable, RealmModel {
         this.readUserIds.addAll(readUserIds);
     }
 
+    public String getDisappearing_message()
+    {
+        return disappearing_message;
+    }
+
+    public void setDisappearing_message(String disappearing_message)
+    {
+        this.disappearing_message = disappearing_message;
+    }
+
     @Override
     public void writeToParcel(Parcel parcel, int i) {
         parcel.writeString(body);
@@ -273,6 +285,7 @@ public class Message implements Parcelable, RealmModel {
         ArrayList<String> readUserIds = new ArrayList<>();
         readUserIds.addAll(this.readUserIds);
         parcel.writeStringList(readUserIds);
+        parcel.writeString(disappearing_message);
     }
 
     public static boolean validate(Message message) {

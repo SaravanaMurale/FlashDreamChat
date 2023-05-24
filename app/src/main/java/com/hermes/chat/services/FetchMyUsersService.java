@@ -36,10 +36,11 @@ public class FetchMyUsersService {
             STARTED = true;
             this.myId = myId;
             this.context = context;
-            context.getContentResolver().registerContentObserver
-                    (ContactsContract.Contacts.CONTENT_URI, true, new MyContentObserver());
-            fetchMyContacts();
-            broadcastMyContacts();
+            /*context.getContentResolver().registerContentObserver
+                    (ContactsContract.Contacts.CONTENT_URI, true, new MyContentObserver());*/
+//            fetchMyContacts();
+            registerUserUpdates();
+//            broadcastMyContacts();
             STARTED = false;
 
         } catch (Exception e) {
@@ -57,7 +58,7 @@ public class FetchMyUsersService {
     }
 
     private void broadcastMyContacts() {
-        if (this.myContacts != null) {
+        if (this.finalUserList != null) {
             Intent intent = new Intent(Helper.BROADCAST_MY_CONTACTS);
             intent.putParcelableArrayListExtra("data", this.myContacts);
             LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(context);
@@ -101,7 +102,56 @@ public class FetchMyUsersService {
             myUsers = new ArrayList<>();
             BaseApplication.getUserRef().addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
-                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    String print = "";
+                    User user;
+                    ArrayList<User> users= new ArrayList<>();
+                    ArrayList<String> connectList = new ArrayList<>();
+                    finalUserList = new ArrayList<>();
+                    for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                        try {
+                            user = snapshot.getValue(User.class);
+                            if (user.getId() != null){
+
+                                users.add(user);
+                                if(user.getId().equals(myId)){
+                                    connectList.addAll(user.getConnect_list());
+                                }
+
+                            }
+
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    for(int i=0;i<users.size();i++){
+                        for(int j=0;j<connectList.size();j++){
+                            try
+                            {
+                                if(connectList.get(j).equals(users.get(i).getId())){
+                                    myUsers.add(users.get(i));
+
+                                }
+                            }catch (Exception e){
+
+                            }
+
+                        }
+                    }
+
+                    finalUserList.addAll(myUsers);
+                    Collections.sort(finalUserList, new Comparator<User>() {
+                        @Override
+                        public int compare(User user1, User user2) {
+                            return user1.getNameToDisplay().compareToIgnoreCase(user2.getNameToDisplay());
+                        }
+                    });
+                    broadcastMyUsers();
+
+
+                }
+               /* public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                     for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                         try {
                             User user = snapshot.getValue(User.class);
@@ -129,7 +179,7 @@ public class FetchMyUsersService {
                         }
                     });
                     broadcastMyUsers();
-                }
+                }*/
 
                 @Override
                 public void onCancelled(@NonNull DatabaseError databaseError) {
@@ -157,8 +207,8 @@ public class FetchMyUsersService {
         public void onChange(boolean selfChange, Uri uri) {
             super.onChange(selfChange, uri);
             Log.d("", uri.toString());
-            fetchMyContacts();
-            broadcastMyContacts();
+//            fetchMyContacts();
+//            broadcastMyContacts();
         }
     }
 }

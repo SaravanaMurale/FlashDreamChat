@@ -4,6 +4,7 @@ import static com.hermes.chat.utils.Helper.getChatData;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -93,9 +94,19 @@ public class MyUsersFragment extends Fragment {
         super.onCreate(savedInstanceState);
         helper = new Helper(getContext());
         userMe = homeInteractor.getUserMe();
+        try
+        {
+            if(userMe.getAdminblock()){
+                mainActivity.checkBlocked();
+            }
+        }catch (Exception e){
+
+        }
+
         Realm.init(getContext());
         rChatDb = Helper.getRealmInstance();
     }
+
 
     @Nullable
     @Override
@@ -114,8 +125,14 @@ public class MyUsersFragment extends Fragment {
             @Override
             public void onRefresh() {
                 try {
+                    RealmQuery<Chat> query=rChatDb.where(Chat.class).equalTo("myId", userMe.getId());
+                   /* if(){
 
-                    RealmQuery<Chat> query = rChatDb.where(Chat.class).equalTo("myId", userMe.getId());//Query from chats whose owner is logged in user
+                    }*/
+                    /*for(int i=0;i<userMe.getBlockedUsersIds().size();i++){*/
+//                        query = .notEqualTo("userId",userMe.getBlockedUsersIds().get(i));//Query from chats whose owner is logged in user
+                  /*  }*/
+
                     resultList = query.isNotNull("user").sort("timeUpdated", Sort.DESCENDING).findAll();//ignore forward list of messages and get rest sorted according to time
 
                     chatDataList.clear();
@@ -340,19 +357,25 @@ public class MyUsersFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        try {
-            RealmQuery<Chat> query = rChatDb.where(Chat.class).equalTo("myId", userMe.getId());//Query from chats whose owner is logged in user
-            resultList = query.isNotNull("user").sort("timeUpdated", Sort.DESCENDING).findAll();//ignore forward list of messages and get rest sorted according to time
+        userMe = helper.getLoggedInUser();
+        if(!userMe.getAdminblock()){
+            try {
+                RealmQuery<Chat> query = rChatDb.where(Chat.class).equalTo("myId", userMe.getId());//Query from chats whose owner is logged in user
+                resultList = query.isNotNull("user").sort("timeUpdated", Sort.DESCENDING).findAll();//ignore forward list of messages and get rest sorted according to time
 
-            chatDataList.clear();
-            chatDataList.addAll(rChatDb.copyFromRealm(resultList));
-            chatAdapter = new ChatAdapter(getActivity(), chatDataList, userMe.getId(), "chat");
-            recyclerView.setAdapter(chatAdapter);
+                chatDataList.clear();
+                chatDataList.addAll(rChatDb.copyFromRealm(resultList));
+                chatAdapter = new ChatAdapter(getActivity(), chatDataList, userMe.getId(), "chat");
+                recyclerView.setAdapter(chatAdapter);
 
-            resultList.addChangeListener(chatListChangeListener);
-        } catch (Exception e) {
-            e.printStackTrace();
+                resultList.addChangeListener(chatListChangeListener);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            setUserNamesAsInPhone();
+        } else {
+            mainActivity.checkBlocked();
         }
-        setUserNamesAsInPhone();
+
     }
 }

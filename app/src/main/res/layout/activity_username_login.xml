@@ -2,7 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/chat_bg_inner"
+    android:background="@drawable/chat_bg_flash_final"
     android:orientation="vertical">
 
     <RelativeLayout
@@ -39,7 +39,7 @@
                 android:layout_width="@dimen/_85sdp"
                 android:layout_height="@dimen/_85sdp"
                 android:layout_gravity="center"
-                android:src="@mipmap/ic_launcher" />
+                android:src="@mipmap/ic_appicon_flash" />
 
             <RelativeLayout
                 android:layout_width="match_parent"
@@ -163,6 +163,7 @@
             android:layout_below="@id/parent"
             android:layout_alignParentEnd="true"
             android:layout_margin="@dimen/_5sdp"
+            android:visibility="gone"
             android:textColor="@color/colorPrimary"
             android:text="Forgot password?" />
     </RelativeLayout>

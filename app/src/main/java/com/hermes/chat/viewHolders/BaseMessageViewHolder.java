@@ -6,7 +6,9 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -28,6 +30,7 @@ import com.hermes.chat.models.AttachmentTypes;
 import com.hermes.chat.models.DownloadFileEvent;
 import com.hermes.chat.models.Message;
 import com.hermes.chat.models.User;
+import com.hermes.chat.utils.FileUtils;
 import com.hermes.chat.utils.GeneralUtils;
 import com.hermes.chat.utils.Helper;
 
@@ -37,6 +40,7 @@ import java.util.HashMap;
 
 
 public class BaseMessageViewHolder extends RecyclerView.ViewHolder {
+    private static final String TAG = "BaseMessageViewHolder";
     protected static int lastPosition;
     public static boolean animate;
     protected static View newMessageView;
@@ -56,13 +60,19 @@ public class BaseMessageViewHolder extends RecyclerView.ViewHolder {
     private ArrayList<Message> messages;
     public LinearLayout linearLayoutMessageText;
     public FrameLayout parentLayout;
+    SharedPreferences pref;
+    String msgTime;
 
     public BaseMessageViewHolder(View itemView, OnMessageItemClick itemClickListener, ArrayList<Message> messages) {
         super(itemView);
         this.messages = messages;
+
         if (itemClickListener != null)
             this.itemClickListener = itemClickListener;
         context = itemView.getContext();
+        pref = context.getSharedPreferences(
+                String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
+        msgTime = pref.getString("disappear", "");
         time = itemView.findViewById(R.id.time);
         senderName = itemView.findViewById(R.id.senderName);
         statusImg = itemView.findViewById(R.id.statusImg);
@@ -93,7 +103,16 @@ public class BaseMessageViewHolder extends RecyclerView.ViewHolder {
     public void setData(final Message message, int position, final HashMap<String, User> myUsersNameInPhoneMap,
                         ArrayList<User> myUsers) {
         try {
+           /* Log.d(TAG, "setData: "+ FileUtils.getTime(msgTime)+" ===Date=== "+Helper.getDateTime(message.getDate()));
             this.message = message;
+
+            if(FileUtils.compareDate(FileUtils.getTime(msgTime),Helper.getDateTime(message.getDate()))){
+
+                Log.d(TAG, "setData: bigger");
+            } else {
+                Log.d(TAG, "setData: bigger");
+            }*/
+
 
             if (attachmentType == AttachmentTypes.NONE_TYPING)
                 return;
@@ -165,6 +184,7 @@ public class BaseMessageViewHolder extends RecyclerView.ViewHolder {
     }
 
     void onItemClick(boolean b) {
+        this.message = messages.get(getAdapterPosition());
         if (itemClickListener != null && message != null) {
             if (b)
                 itemClickListener.OnMessageClick(message, getAdapterPosition());

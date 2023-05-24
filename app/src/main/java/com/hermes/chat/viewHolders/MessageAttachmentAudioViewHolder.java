@@ -2,6 +2,7 @@ package com.hermes.chat.viewHolders;
 
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
 import android.view.View;
 import android.widget.ImageView;
@@ -198,7 +199,7 @@ public class MessageAttachmentAudioViewHolder extends BaseMessageViewHolder {
                     } else if (message1.getAttachmentType() == AttachmentTypes.LOCATION) {
                         try {
                             String staticMap = "https://maps.googleapis.com/maps/api/staticmap?center=%s,%s&zoom=16&size=512x512&format=png";
-                            String Key = "&key=" + context.getString(R.string.key);
+                            String Key = "&key=" + FileUtils.key(context);
                             String latitude, longitude;
                             JSONObject placeData = new JSONObject(message1.getAttachment().getData());
                             statusText.setText(placeData.getString("address"));
@@ -232,11 +233,17 @@ public class MessageAttachmentAudioViewHolder extends BaseMessageViewHolder {
     //@OnClick(R.id.playPauseToggle)
     public void downloadFile(String url, String name, int attachmentType) {
         try {
-            if (checkPermission()) {
-                new DownloadTask(context, url, name,attachmentType);
-            } else {
-                requestPermission();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            new DownloadTask(context, url, name,attachmentType);
+        }
+            else {
+                if (checkPermission()) {
+                    new DownloadTask(context, url, name,attachmentType);
+                } else {
+                    requestPermission();
+                }
             }
+
         } catch (Exception e) {
             e.printStackTrace();
         }

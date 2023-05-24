@@ -68,6 +68,37 @@ public class FirebaseCallService {
     }
 
     private void saveCallLog(CallLogFireBaseModel callLog, String myId) {
+        try {
+            User user = null;
+            if (callLog.getType().equalsIgnoreCase("single")) {
+                user = FirebaseChatService.userHashMap.get(callLog.getCallerId().get(0));
+            }
+
+            RealmList<String> list = new RealmList<>();
+            list.addAll(callLog.getCallerId());
+            /*logCall.add(new LogCall(user, callLog.getCurrentMills(), 0,
+                    callLog.isVideo(), callLog.getInOrOut(), myId, list,
+                    callLog.getId(), callLog.getDuration()));*/
+            LogCall log = new LogCall(user, callLog.getCurrentMills(), 0,
+                    callLog.isVideo(), callLog.getInOrOut(), myId, list, callLog.getId(), callLog.getDuration());
+            boolean isFound = false;
+            for (int i = 0; i < logCall.size(); i++) {
+                if (logCall.get(i).getId().equalsIgnoreCase(log.getId())) {
+                    logCall.set(i, log);
+                    isFound = true;
+                    return;
+                }
+            }
+
+            if (!isFound)
+                logCall.add(log);
+            broadcastCall();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /*private void saveCallLog(CallLogFireBaseModel callLog, String myId) {
         User user = FirebaseChatService.userHashMap.get(callLog.getCallerId().get(0));
 
         RealmList<String> list = new RealmList<>();
@@ -75,7 +106,7 @@ public class FirebaseCallService {
         logCall.add(new LogCall(user, callLog.getCurrentMills(), 0,
                 callLog.isVideo(), callLog.getInOrOut(), myId, list,
                 callLog.getId(), callLog.getDuration()));
-    }
+    }*/
 
     private void removeLog(CallLogFireBaseModel callLog) {
         for (LogCall logs : logCall) {

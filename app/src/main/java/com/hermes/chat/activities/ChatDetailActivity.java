@@ -438,73 +438,80 @@ public class ChatDetailActivity extends BaseActivity implements OnUserDetailFrag
     }
 
     private void setUserData() {
-        if (user != null) {
-            userName.setCompoundDrawablesWithIntrinsicBounds(user.isOnline()
-                    ? R.drawable.ring_green : 0, 0, 0, 0);
-        }
-        userStatus.setText(user != null ? user.getStatus() : group.getStatus());
-        if (user != null) {
-            if (user.getImage() != null && !user.getImage().isEmpty() && user.getBlockedUsersIds() != null
-                    && !user.getBlockedUsersIds().contains(userMe.getId())) {
-                Picasso.get()
-                        .load(user.getImage())
-                        .tag(this)
-                        .error(R.drawable.ic_person_gray)
-                        .placeholder(R.drawable.ic_person_gray)
-                        .into(userImage);
-            } else
-                Picasso.get()
-                        .load(R.drawable.ic_person_gray)
-                        .tag(this)
-                        .error(R.drawable.ic_person_gray)
-                        .placeholder(R.drawable.ic_person_gray)
-                        .into(userImage);
-        } else if (group != null) {
-            if (group.getImage() != null && !group.getImage().isEmpty()) {
-                Picasso.get()
-                        .load(group.getImage())
-                        .tag(this)
-                        .error(R.drawable.ic_person_gray)
-                        .placeholder(R.drawable.ic_person_gray)
-                        .into(userImage);
-            } else
-                Picasso.get()
-                        .load(R.drawable.ic_person_gray)
-                        .tag(this)
-                        .error(R.drawable.ic_person_gray)
-                        .placeholder(R.drawable.ic_person_gray)
-                        .into(userImage);
-        } else
-            Picasso.get()
-                    .load(R.drawable.ic_person_gray)
-                    .tag(this)
-                    .error(R.drawable.ic_person_gray)
-                    .placeholder(R.drawable.ic_person_gray)
-                    .into(userImage);
-
-
-        if (group != null) {
-            userName.setEnabled(true);
-            userStatus.setEnabled(true);
-            userStatus.setVisibility(View.GONE);
-            done.setVisibility(View.VISIBLE);
-            pickImage.setVisibility(View.VISIBLE);
-        } else {
-            userName.setEnabled(false);
-            userStatus.setEnabled(false);
-            userStatus.setVisibility(View.VISIBLE);
-            done.setVisibility(View.GONE);
-            pickImage.setVisibility(View.GONE);
+        try
+        {
             if (user != null) {
-                if (user.isOnline()) {
-                    userStatus.setText("Online");
-                } else {
-                    if (user.getTimeStamp() != 0)
-                        userStatus.setText(getChatData(ChatDetailActivity.this).getLblLastSeen() + " " + Helper.getTimeAgoLastSeen(user.getTimeStamp(),
-                                ChatDetailActivity.this));
+                userName.setCompoundDrawablesWithIntrinsicBounds(user.isOnline()
+                        ? R.drawable.ring_green : 0, 0, 0, 0);
+            }
+            userStatus.setText(user != null ? user.getStatus() : group.getStatus());
+            if (user != null) {
+                if (user.getImage() != null && !user.getImage().isEmpty() && user.getBlockedUsersIds() != null
+                        && !user.getBlockedUsersIds().contains(userMe.getId())) {
+                    Picasso.get()
+                            .load(user.getImage())
+                            .tag(this)
+                            .error(R.drawable.ic_person_gray)
+                            .placeholder(R.drawable.ic_person_gray)
+                            .into(userImage);
+                } else
+                    Picasso.get()
+                            .load(R.drawable.ic_person_gray)
+                            .tag(this)
+                            .error(R.drawable.ic_person_gray)
+                            .placeholder(R.drawable.ic_person_gray)
+                            .into(userImage);
+            } else if (group != null) {
+                if (group.getImage() != null && !group.getImage().isEmpty()) {
+                    Picasso.get()
+                            .load(group.getImage())
+                            .tag(this)
+                            .error(R.drawable.ic_person_gray)
+                            .placeholder(R.drawable.ic_person_gray)
+                            .into(userImage);
+                } else
+                    Picasso.get()
+                            .load(R.drawable.ic_person_gray)
+                            .tag(this)
+                            .error(R.drawable.ic_person_gray)
+                            .placeholder(R.drawable.ic_person_gray)
+                            .into(userImage);
+            } else
+                Picasso.get()
+                        .load(R.drawable.ic_person_gray)
+                        .tag(this)
+                        .error(R.drawable.ic_person_gray)
+                        .placeholder(R.drawable.ic_person_gray)
+                        .into(userImage);
+
+
+            if (group != null) {
+                userName.setEnabled(true);
+                userStatus.setEnabled(true);
+                userStatus.setVisibility(View.GONE);
+                done.setVisibility(View.VISIBLE);
+                pickImage.setVisibility(View.VISIBLE);
+            } else {
+                userName.setEnabled(false);
+                userStatus.setEnabled(false);
+                userStatus.setVisibility(View.VISIBLE);
+                done.setVisibility(View.GONE);
+                pickImage.setVisibility(View.GONE);
+                if (user != null) {
+                    if (user.isOnline()) {
+                        userStatus.setText("Online");
+                    } else {
+                        if (user.getTimeStamp() != 0)
+                            userStatus.setText(getChatData(ChatDetailActivity.this).getLblLastSeen() + " " + Helper.getTimeAgoLastSeen(user.getTimeStamp(),
+                                    ChatDetailActivity.this));
+                    }
                 }
             }
+
+        }catch (Exception e){
+
         }
+
     }
 
     private void loadFragment(final String fragmentTag) {

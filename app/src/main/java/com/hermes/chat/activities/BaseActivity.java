@@ -10,6 +10,7 @@ import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -35,7 +36,7 @@ import io.realm.Realm;
 
 public abstract class BaseActivity extends AppCompatActivity implements ServiceConnection {
     protected String[] permissionsRecord = {Manifest.permission.VIBRATE, Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE};
-    protected String[] permissionsContact = {Manifest.permission.READ_CONTACTS, Manifest.permission.WRITE_EXTERNAL_STORAGE};
+    protected String[] permissionsContact = {Manifest.permission.READ_CONTACTS};
     protected String[] permissionsStorage = {Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE};
     protected String[] permissionsCamera = {Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE};
     protected String[] permissionsSinch = {Manifest.permission.RECORD_AUDIO, Manifest.permission.MODIFY_AUDIO_SETTINGS, Manifest.permission.READ_PHONE_STATE};
@@ -43,6 +44,8 @@ public abstract class BaseActivity extends AppCompatActivity implements ServiceC
     protected Group group;
     protected Helper helper;
     protected Realm rChatDb;
+
+    public static FirebaseChatService firebaseChatService;
 
     protected DatabaseReference usersRef, groupRef, chatRef, statusRef;
     private FirebaseApp secondApp;
@@ -121,9 +124,13 @@ public abstract class BaseActivity extends AppCompatActivity implements ServiceC
     private BroadcastReceiver myContactsReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            ArrayList<Contact> myContacts = intent.getParcelableArrayListExtra("data");
+           /* ArrayList<Contact> myContacts = intent.getParcelableArrayListExtra("data");
             if (myContacts != null) {
                 myContactsResult(myContacts);
+            }*/
+            ArrayList<User> myUsers = intent.getParcelableArrayListExtra("data");
+            if (myUsers != null) {
+                myUsersResult(myUsers);
             }
         }
     };
@@ -153,6 +160,7 @@ public abstract class BaseActivity extends AppCompatActivity implements ServiceC
         super.onCreate(savedInstanceState);
         helper = new Helper(this);
         userMe = helper.getLoggedInUser();
+
         Realm.init(this);
         rChatDb = Helper.getRealmInstance();
         usersRef = BaseApplication.getUserRef();
@@ -161,7 +169,7 @@ public abstract class BaseActivity extends AppCompatActivity implements ServiceC
         statusRef = BaseApplication.getStatusRef();
 
         if (!FirebaseChatService.isChatServiceStarted)
-            new FirebaseChatService(BaseActivity.this);
+            firebaseChatService = new FirebaseChatService(BaseActivity.this);
 
         FirebaseApp.initializeApp(this);
         //  getApplicationContext().bindService(new Intent(this, SinchService.class), this, BIND_AUTO_CREATE);

@@ -17,6 +17,7 @@ import com.google.firebase.messaging.FirebaseMessaging;
 
 public class FirebaseDemoNotification extends AppCompatActivity {
 
+    private static final String TAG = "FirebaseDemoNotificatio";
     EditText edtTitle;
     EditText edtMessage;
     String toToken = "";
@@ -30,7 +31,7 @@ public class FirebaseDemoNotification extends AppCompatActivity {
         edtMessage = findViewById(R.id.edtMessage);
         Button btnSend = findViewById(R.id.btnSend);
 
-        FirebaseMessaging.getInstance().getToken().addOnCompleteListener(new OnCompleteListener<String>() {
+       /* FirebaseMessaging.getInstance().getToken().addOnCompleteListener(new OnCompleteListener<String>() {
             @Override
             public void onComplete(@NonNull Task<String> task) {
                 if (task.isComplete()) {
@@ -40,13 +41,30 @@ public class FirebaseDemoNotification extends AppCompatActivity {
                 }
 
             }
-        });
+        });*/
+
+        FirebaseMessaging.getInstance().getToken()
+                .addOnCompleteListener(new OnCompleteListener<String>() {
+                    @Override
+                    public void onComplete(@NonNull Task<String> task) {
+                        if (!task.isSuccessful()) {
+                            Log.w("TAG", "FCM registration token failed", task.getException());
+                            return;
+                        }
+
+                        // Get new FCM registration token
+                        toToken = task.getResult();
+                        Log.d(TAG, "onComplete: "+toToken);
+
+                    }
+                });
 
 
         btnSend.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 //   registration_ids = new String[]{toToken};
+                Log.d(TAG, "onClick: "+toToken);
                 registration_ids = new String[]{toToken,
                         "cDFc59XDVkJWqSJimaNgTd:APA91bHk6KlaUC0V3_MZU_urywOZb-lUKqfLsswJ1eTS9WZ71KJWBEEARgE_d7MyiraMkMWjfpTezeK3bUiCaDUEBYVTuw3E5V62T8U2cWq1Zt56hgsL86RJNtDGn6bEhFdES-lcfudT"};
                 new SendFirebaseNotification(FirebaseDemoNotification.this,

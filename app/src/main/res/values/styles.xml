@@ -58,6 +58,9 @@
         <!-- Gets rid of the search icon -->
         <item name="searchIcon">@drawable/ic_search_white</item>
 
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textColorHint">@android:color/white</item>
+
         <!-- Gets rid of the search icon when the SearchView is expanded -->
         <item name="searchHintIcon">@drawable/ic_search_white</item>
 <item name="closeIcon">@drawable/ic_close_white_24dp</item>

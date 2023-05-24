@@ -131,7 +131,7 @@ public class MediaSummaryAdapter extends RecyclerView.Adapter<MediaSummaryAdapte
                     Picasso.get()
                             .load(msg.getAttachment().getUrl())
                             .tag(this)
-                            .placeholder(R.drawable.ic_logo_)
+                            .placeholder(R.mipmap.ic_app_icon_hermes)
                             .into(imageView);
 
                     break;
@@ -162,7 +162,7 @@ public class MediaSummaryAdapter extends RecyclerView.Adapter<MediaSummaryAdapte
                     Picasso.get()
                             .load(msg.getAttachment().getData())
                             .tag(this)
-                            .placeholder(R.drawable.ic_logo_)
+                            .placeholder(R.mipmap.ic_app_icon_hermes)
                             .into(imageView);
 
                     //imageView.setImageDrawable(ContextCompat.getDrawable(context, R.drawable.video_file));

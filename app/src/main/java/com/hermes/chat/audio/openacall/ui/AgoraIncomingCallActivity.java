@@ -106,7 +106,7 @@ public class AgoraIncomingCallActivity extends AppCompatActivity {
                 TextView remoteUser = findViewById(R.id.remoteUser);
                 remoteUser.setText(user.getNameInPhone());
                 ImageView userImage2 = findViewById(R.id.userImage2);
-                if (user != null && !user.getImage().isEmpty()) {
+               /* if (user != null && !user.getImage().isEmpty()) {
                     Picasso.get()
                             .load(user.getImage())
                             .tag(this)
@@ -114,7 +114,7 @@ public class AgoraIncomingCallActivity extends AppCompatActivity {
                             .into(userImage2);
                 } else {
                     userImage2.setBackgroundResource(R.drawable.ic_username);
-                }
+                }*/
             }
         } catch (JSONException e) {
             e.printStackTrace();

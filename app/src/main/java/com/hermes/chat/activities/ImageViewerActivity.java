@@ -39,7 +39,7 @@ public class ImageViewerActivity extends AppCompatActivity {
             Picasso.get()
                     .load(imageUrl)
                     .tag(this)
-                    .placeholder(R.drawable.ic_logo_)
+                    .placeholder(R.mipmap.ic_app_icon_hermes)
                     .into(photoView);
 //        Glide.with(this).load(imageUrl).into(photoView);
     }

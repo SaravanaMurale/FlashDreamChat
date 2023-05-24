@@ -1,6 +1,7 @@
 package com.hermes.chat.adapters;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,6 +23,7 @@ import com.hermes.chat.models.Chat;
 import com.hermes.chat.models.Group;
 import com.hermes.chat.models.Message;
 import com.hermes.chat.models.User;
+import com.hermes.chat.utils.FileUtils;
 import com.hermes.chat.utils.Helper;
 import com.squareup.picasso.NetworkPolicy;
 import com.squareup.picasso.Picasso;
@@ -36,6 +38,7 @@ import io.realm.RealmList;
  */
 
 public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MyViewHolder> {
+    private static final String TAG = "ChatAdapter";
     private Context context;
     private ArrayList<Chat> dataList;
     private OnUserGroupItemClick itemClickListener;
@@ -120,7 +123,10 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MyViewHolder> 
                         if (pos != -1) {
                             Chat chat = dataList.get(pos);
                             if (chat.getUser() != null)
+                            {
+                                Log.d(TAG, "onClick: " + chat.getUser().getDeviceToken());
                                 itemClickListener.OnUserClick(chat.getUser(), pos, image);
+                            }
                             else if (chat.getGroup() != null)
                                 itemClickListener.OnGroupClick(chat.getGroup(), pos, image);
                         }
@@ -251,7 +257,10 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MyViewHolder> 
                 time.setText(Helper.getChatFormattedDate(chat.getTimeUpdated()));
             }
             if (chatUser != null) {
-                lastMessage.setText(chat.getLastMessage());
+
+                    lastMessage.setText(chat.getLastMessage());
+
+
             } else if (chatGroup != null) {
                 if (message.size() > 0) {
                     lastMessage.setText(chat.getLastMessage());
@@ -286,7 +295,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MyViewHolder> 
 
             try {
                 if (message != null && message.size() > 0) {
-                    if (message != null && message.get(message.size() - 1).getAttachmentType() == AttachmentTypes.AUDIO
+                    if(from.equalsIgnoreCase("group")){
+                          if (message != null && message.get(message.size() - 1).getAttachmentType() == AttachmentTypes.AUDIO
                             && message.get(message.size() - 1).getDelete().isEmpty()) {
                         img.setVisibility(View.VISIBLE);
                         img.setBackgroundResource(R.drawable.ic_audiotrack_gray);
@@ -325,6 +335,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MyViewHolder> 
                             && message.get(message.size() - 1).getDelete().isEmpty()) {
                         img.setVisibility(View.GONE);
                     }
+                    }
+
                     try {
                         if (!from.equalsIgnoreCase("group")) {
                             if (!message.get(message.size() - 1).getRecipientId().equalsIgnoreCase(userId)
@@ -354,10 +366,57 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MyViewHolder> 
                     if (chatUser != null) {
                         msgCountGroup.setVisibility(View.GONE);
                         int count = 0;
+                        String lastMessageStr="", msgDelete="";
+                        int msgType=-1;
                         for (int i = 0; i < message.size(); i++) {
                             if (!message.get(i).isReadMsg() && !message.get(i).getSenderId().equalsIgnoreCase(userId)
                                     && !message.get(i).isBlocked())
                                 count++;
+                            if(!FileUtils.compareDate(FileUtils.getTime(message.get(i).getDisappearing_message().replace(" Minutes","")),Helper.getDateTime(message.get(i).getDate()))){
+                                lastMessageStr = message.get(i).getBody();
+                                msgType = message.get(i).getAttachmentType();
+                                msgDelete = message.get(i).getDelete();
+                            }
+                        }
+                        lastMessage.setText(lastMessageStr);
+                        if (msgType == AttachmentTypes.AUDIO
+                                && msgDelete.isEmpty()) {
+                            img.setVisibility(View.VISIBLE);
+                            img.setBackgroundResource(R.drawable.ic_audiotrack_gray);
+                            lastMessage.setText(context.getString(R.string.audio));
+                        } else if (msgType == AttachmentTypes.RECORDING
+                                && msgDelete.isEmpty()) {
+                            img.setVisibility(View.VISIBLE);
+                            img.setBackgroundResource(R.drawable.ic_audiotrack_gray);
+                            lastMessage.setText(context.getString(R.string.recording));
+                        } else if (msgType == AttachmentTypes.VIDEO
+                                && msgDelete.isEmpty()) {
+                            img.setVisibility(View.VISIBLE);
+                            img.setBackgroundResource(R.drawable.ic_videocam_gray);
+                            lastMessage.setText(context.getString(R.string.video));
+                        } else if (msgType == AttachmentTypes.IMAGE
+                                && msgDelete.isEmpty()) {
+                            img.setVisibility(View.VISIBLE);
+                            img.setBackgroundResource(R.drawable.ic_wallpaper_gray);
+                            lastMessage.setText(context.getString(R.string.image));
+                        } else if (msgType == AttachmentTypes.CONTACT
+                                && msgDelete.isEmpty()) {
+                            img.setVisibility(View.VISIBLE);
+                            img.setBackgroundResource(R.drawable.ic_contact_gray);
+                            lastMessage.setText(context.getString(R.string.contact));
+                        } else if (msgType == AttachmentTypes.LOCATION
+                                && msgDelete.isEmpty()) {
+                            img.setVisibility(View.VISIBLE);
+                            img.setBackgroundResource(R.drawable.ic_location_gray);
+                            lastMessage.setText(context.getString(R.string.location));
+                        } else if (msgType == AttachmentTypes.DOCUMENT
+                                && msgDelete.isEmpty()) {
+                            img.setVisibility(View.VISIBLE);
+                            img.setBackgroundResource(R.drawable.ic_insert_gray);
+                            lastMessage.setText(context.getString(R.string.document));
+                        } else if (msgType == AttachmentTypes.NONE_TEXT
+                                && msgDelete.isEmpty()) {
+                            img.setVisibility(View.GONE);
                         }
 
                         if (count > 99) {

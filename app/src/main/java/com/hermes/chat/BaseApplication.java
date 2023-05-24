@@ -31,7 +31,7 @@ public class BaseApplication extends Application implements LifecycleObserver {
 
     private static FirebaseApp secondApp;
     private static FirebaseDatabase secondDatabase;
-    private static DatabaseReference userRef, chatRef, groupsRef, statusRef, callsRef, langRef;
+    private static DatabaseReference userRef, chatRef, groupsRef, statusRef, callsRef, langRef, disappearRef, keyRef, keys;
     public static boolean isInBackground = false;
     protected Helper helper;
     protected User userMe;
@@ -58,13 +58,13 @@ public class BaseApplication extends Application implements LifecycleObserver {
         ProcessLifecycleOwner.get().getLifecycle().addObserver(this);
         ConnectivityReceiver.init(this);
         EmojiManager.install(new GoogleEmojiProvider());
-        FirebaseDatabase.getInstance().setPersistenceEnabled(true);
+//        FirebaseDatabase.getInstance().setPersistenceEnabled(true);
         init();
     }
 
     private void init() {
 
-        initWorkerThread();
+//        initWorkerThread();
         FirebaseDatabase firebaseDatabase = FirebaseDatabase.getInstance();
         userRef = firebaseDatabase.getReference(Helper.REF_DATA).child(Helper.REF_USER);
         chatRef = firebaseDatabase.getReference(Helper.REF_DATA).child(Helper.REF_CHAT);
@@ -72,6 +72,11 @@ public class BaseApplication extends Application implements LifecycleObserver {
         statusRef = firebaseDatabase.getReference(Helper.REF_DATA).child(Helper.REF_STATUS_NEW);
         callsRef = firebaseDatabase.getReference(Helper.REF_DATA).child(Helper.REF_CALLS);
         langRef = firebaseDatabase.getReference(Helper.REF_DATA).child(Helper.REF_LANGUAGES);
+        disappearRef = firebaseDatabase.getReference(Helper.REF_DATA).child(Helper.REF_DISAPPEAR);
+        keyRef = firebaseDatabase.getReference(Helper.REF_DATA).child(Helper.REF_KEY);
+        keys = firebaseDatabase.getReference(Helper.REF_DATA).child("keys");
+
+
 
       /*  FirebaseOptions options = new FirebaseOptions.Builder()
                 .setApplicationId(getString(R.string.google_app_id))
@@ -146,6 +151,33 @@ public class BaseApplication extends Application implements LifecycleObserver {
         return langRef;
     }
 
+    public static DatabaseReference getDisappearRef() {
+        if (disappearRef == null) {
+            disappearRef = FirebaseDatabase.getInstance().getReference(Helper.REF_DATA).child(Helper.REF_DISAPPEAR);
+//            langRef = secondDatabase.getReference(Helper.REF_DATA).child(Helper.REF_LANGUAGES);
+            disappearRef.keepSynced(true);
+        }
+        return disappearRef;
+    }
+
+    public static DatabaseReference getKeyRef() {
+        if (keyRef == null) {
+            keyRef = FirebaseDatabase.getInstance().getReference(Helper.REF_DATA).child(Helper.REF_KEY);
+//            langRef = secondDatabase.getReference(Helper.REF_DATA).child(Helper.REF_LANGUAGES);
+            keyRef.keepSynced(true);
+        }
+        return keyRef;
+    }
+
+    public static DatabaseReference getKeyData() {
+        if (keys == null) {
+            keys = FirebaseDatabase.getInstance().getReference(Helper.REF_DATA).child("keys");
+//            langRef = secondDatabase.getReference(Helper.REF_DATA).child(Helper.REF_LANGUAGES);
+            keys.keepSynced(true);
+        }
+        return keys;
+    }
+
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
     private void onAppBackgrounded() {
         markOnline(false);
@@ -177,12 +209,12 @@ public class BaseApplication extends Application implements LifecycleObserver {
     private static WorkerThread mWorkerThread;
 
     public synchronized void initWorkerThread() {
-        if (mWorkerThread == null) {
+//        if (mWorkerThread == null) {
             mWorkerThread = new WorkerThread(getApplicationContext());
             mWorkerThread.start();
 
             mWorkerThread.waitForReady();
-        }
+//        }
     }
 
     public static final MyEngineEventHandler event() {

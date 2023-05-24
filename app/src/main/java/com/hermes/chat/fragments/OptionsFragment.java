@@ -13,6 +13,7 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -40,16 +41,19 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.hermes.chat.BaseApplication;
 import com.hermes.chat.BuildConfig;
 import com.hermes.chat.R;
+import com.hermes.chat.activities.BaseActivity;
 import com.hermes.chat.activities.ChangePasswordActivity;
 import com.hermes.chat.activities.MainActivity;
 import com.hermes.chat.activities.ProfileActivity;
 import com.hermes.chat.activities.SplashActivity;
 import com.hermes.chat.activities.UserNameSignInActivity;
+import com.hermes.chat.adapters.DisappearingListAdapter;
 import com.hermes.chat.adapters.LanguageListAdapter;
 import com.hermes.chat.models.Attachment;
 import com.hermes.chat.models.AttachmentTypes;
 import com.hermes.chat.models.LanguageListModel;
 import com.hermes.chat.models.User;
+import com.hermes.chat.services.FirebaseChatService;
 import com.hermes.chat.utils.ConfirmationDialogFragment;
 import com.hermes.chat.utils.FirebaseUploader;
 import com.hermes.chat.utils.Helper;
@@ -83,6 +87,7 @@ import io.realm.Realm;
 
 
 public class OptionsFragment extends BaseFullDialogFragment implements ImagePickerCallback {
+    private static final String TAG = "OptionsFragment";
     protected String[] permissionsCamera = {Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE,
             Manifest.permission.WRITE_EXTERNAL_STORAGE};
     private User userMe;
@@ -112,7 +117,7 @@ public class OptionsFragment extends BaseFullDialogFragment implements ImagePick
     private TextView wallpaper;
     private TextView changePassword;
     private TextView changeLanguage;
-    private TextView share;
+    private TextView share, disappearing_message;
     private TextView rate;
     private TextView privacy;
     private TextView invite_friends;
@@ -131,15 +136,70 @@ public class OptionsFragment extends BaseFullDialogFragment implements ImagePick
         super.onCreate(savedInstanceState);
         helper = new Helper(getContext());
         userMe = helper.getLoggedInUser();
+        if(userMe.getAdminblock()){
+            checkBlocked();
+        }
         idChatRef = BaseApplication.getUserRef().child(userMe.getId());
         idChatRef.addValueEventListener(valueEventListener);
 //        sinchServiceInterface = BaseActivity.mSinchServiceInterface;
+    }
+
+    private void checkBlocked()
+    {
+
+
+          /*  BaseApplication.getUserRef().child(userMe.getId()).addValueEventListener(new ValueEventListener()
+            {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot)
+                {
+                    User user= snapshot.getValue(User.class);
+                    if(user.getAdminblock()){*/
+        try {
+//                idChatRef.removeEventListener(valueEventListener);
+            helper.setCacheMyUsers(new ArrayList<>());
+            FirebaseAuth.getInstance().signOut();
+            LocalBroadcastManager.getInstance(requireContext()).sendBroadcast(new Intent(Helper.BROADCAST_LOGOUT));
+//                                    sinchServiceInterface.stopClient();
+            helper.clearPhoneNumberForVerification();
+            helper.logout();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            Helper.getRealmInstance().executeTransaction(new Realm.Transaction() {
+                @Override
+                public void execute(Realm realm) {
+                    realm.deleteAll();
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        SharedPreferences prefs = context.getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
+        prefs.edit().putString("LoggedIn","false");
+        Intent mIntent = new Intent(context, UserNameSignInActivity.class);
+        mIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(mIntent);
+        requireActivity().finish();
+                   /* }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error)
+                {
+
+                }
+            });*/
+
+
     }
 
     @Override
     public void onResume() {
         super.onResume();
         userName.setText(userMe.getNameToDisplay());
+
         userStatus.setText(userMe.getStatus());
 
         if (userMe.getImage() != null && !userMe.getImage().isEmpty())
@@ -156,8 +216,14 @@ public class OptionsFragment extends BaseFullDialogFragment implements ImagePick
     ValueEventListener valueEventListener = new ValueEventListener() {
         @Override
         public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-            userMe = dataSnapshot.getValue(User.class);
-            helper.setLoggedInUser(userMe);
+            try
+            {
+                userMe = dataSnapshot.getValue(User.class);
+                helper.setLoggedInUser(userMe);
+            }catch (Exception e){
+
+            }
+
         }
 
         @Override
@@ -179,6 +245,7 @@ public class OptionsFragment extends BaseFullDialogFragment implements ImagePick
 
         title = view.findViewById(R.id.title);
         wallpaper = view.findViewById(R.id.wallpaper);
+//        disappearing_message = view.findViewById(R.id.disappearing_message);
         share = view.findViewById(R.id.share);
         rate = view.findViewById(R.id.rate);
         privacy = view.findViewById(R.id.privacy);
@@ -187,6 +254,7 @@ public class OptionsFragment extends BaseFullDialogFragment implements ImagePick
         logout = view.findViewById(R.id.logout);
         changeLanguage = view.findViewById(R.id.changeLanguage);
         changePassword = view.findViewById(R.id.changePassword);
+        disappearing_message = view.findViewById(R.id.disappearing_message);
 
 
         try {
@@ -314,6 +382,9 @@ public class OptionsFragment extends BaseFullDialogFragment implements ImagePick
                                     e.printStackTrace();
                                 }
 
+                                FirebaseChatService.isChatServiceStarted = false;
+                                BaseActivity.firebaseChatService.removeListener();
+
                                 Intent mIntent = new Intent(getContext(), UserNameSignInActivity.class);
                                 mIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                                 startActivity(mIntent);
@@ -340,7 +411,16 @@ public class OptionsFragment extends BaseFullDialogFragment implements ImagePick
         view.findViewById(R.id.changePassword).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivity(new Intent(getContext(), ChangePasswordActivity.class));
+                Intent changeIntent = new Intent(requireContext(), ChangePasswordActivity.class);
+                changeIntent.putExtra("from", "option");
+                startActivity(changeIntent);
+            }
+        });
+
+        view.findViewById(R.id.disappearing_message).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                callDisappearingMessage();
             }
         });
 
@@ -351,6 +431,76 @@ public class OptionsFragment extends BaseFullDialogFragment implements ImagePick
             }
         });
         return view;
+    }
+
+    private void callDisappearingMessage()
+    {
+        {
+            showPDialog();
+            BaseApplication.getDisappearRef().addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                    Log.e("Key", "onChildAdded: ");
+                    HashMap<Object, Object> list = new HashMap<>();
+                    list = (HashMap<Object, Object>) dataSnapshot.getValue();
+                    List<String> items = new ArrayList<>();
+                    for (Object keys : list.keySet()) {
+                        items.add((String) keys);
+                    }
+                    dismissDialog();
+                    loadDisappearing(items);
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                }
+            });
+
+        }
+    }
+
+    private void loadDisappearing(List<String> items)
+    {
+        final AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getContext());
+        List<String> data = new ArrayList<>();
+
+        for(int i =0;i<items.size();i++ ){
+            data.add(items.get(i));
+        }
+        data.add("Turn off");
+        items.clear();
+        items.addAll(data);
+        LayoutInflater inflater = (LayoutInflater) getActivity().
+                getSystemService(LAYOUT_INFLATER_SERVICE);
+        View view = inflater.inflate(R.layout.dialog_language_list, null);
+        alertDialogBuilder.setView(view);
+        alertDialogBuilder.setCancelable(false);
+        RecyclerView rvLanguageList = view.findViewById(R.id.rv_languagelist);
+        TextView title = view.findViewById(R.id.title);
+          title.setText("Choose Options");
+        rvLanguageList.setLayoutManager(new LinearLayoutManager(getActivity(),
+                LinearLayoutManager.VERTICAL, false));
+        rvLanguageList.setHasFixedSize(true);
+        rvLanguageList.setAdapter(new DisappearingListAdapter(getActivity(), items,
+                OptionsFragment.this));
+
+        int width = (int) (getResources().getDisplayMetrics().widthPixels * 0.90);
+        int height = (int) (getResources().getDisplayMetrics().heightPixels * 0.50);
+
+        dialog = alertDialogBuilder.create();
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.show();
+        dialog.getWindow().addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
+        dialog.getWindow().setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT);
+    }
+    public void addToSharedPref(String msg){
+        Log.d(TAG, "addToSharedPref: "+msg);
+//        userMe.setDisappearing_message();
+        BaseApplication.getUserRef().child(userMe.getId()).child("disappearing_message").setValue(msg);
+        /*SharedPreferences prefs = requireContext().getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
+        prefs.edit().putString("disappear", msg).apply();*/
+        dialog.dismiss();
     }
 
     private void callLang() {

@@ -10,14 +10,22 @@ repositories {
     }
 }
 android {
+    signingConfigs {
+        config {
+            storeFile file('C:\\Users\\Dreamguystech\\Documents\\andi-dreamschat-android\\app\\flash.jks')
+            storePassword 'flash123'
+            keyAlias 'flash'
+            keyPassword 'flash123'
+        }
+    }
     compileSdk 33
 
     defaultConfig {
         applicationId "com.hermes.chat"
         minSdk 21
         targetSdk 33
-        versionCode 1
-        versionName "1.0"
+        versionCode 3
+        versionName "1.0.1"
         multiDexEnabled true
 
 
@@ -97,7 +105,10 @@ dependencies {
     implementation 'org.slf4j:slf4j-api:1.7.25'
     implementation platform('com.google.firebase:firebase-bom:28.3.0')
 
-    implementation 'com.google.android.gms:play-services-auth:16.0.1'
+    implementation 'com.google.android.gms:play-services-auth:20.5.0'
+//    implementation 'com.google.android.gms:play-services-auth:16.0.1'
     implementation project(':statusstories')
+
+//    implementation 'io.reactivex.rxjava2:rxjava:2.1.8'
 
 }

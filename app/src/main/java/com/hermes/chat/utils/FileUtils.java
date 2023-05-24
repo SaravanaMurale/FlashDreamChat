@@ -1,9 +1,11 @@
 package com.hermes.chat.utils;
 
+import android.Manifest;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.graphics.Bitmap;
@@ -13,17 +15,28 @@ import android.os.Build;
 import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
+import android.provider.OpenableColumns;
+import android.util.Base64;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
+
+import androidx.core.content.ContextCompat;
 
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
+import java.text.DateFormat;
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Comparator;
+import java.util.Date;
+import java.util.Locale;
 
 
 public class FileUtils {
@@ -128,6 +141,23 @@ public class FileUtils {
             return Uri.fromFile(file);
         }
         return null;
+    }
+
+    public static String getTime(String time){
+        String strDate="";
+      try
+      {
+          Calendar cal = Calendar.getInstance();
+// remove next line if you're always using the current time.
+          cal.add(Calendar.MINUTE, -Integer.parseInt(time));
+          Date time2 = cal.getTime();
+          DateFormat dateFormat = new SimpleDateFormat("dd MMM hh:mm aa");
+          strDate = dateFormat.format(time2);
+
+      }catch (Exception e){
+
+      }
+        return strDate;
     }
 
     /**
@@ -513,5 +543,107 @@ public class FileUtils {
         // Only return URIs that can be opened with ContentResolver
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         return intent;
+    }
+
+    public static Boolean compareDate(String disMsg, String msgTime){
+        boolean bigger= false;
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("dd MMM hh:mm aa");
+            Date date1 = sdf.parse(disMsg);
+            Date date2 = sdf.parse(msgTime);
+            if(date1.before(date2)){
+                bigger = false;
+            } else if(date1.after(date2)){
+                bigger = true;
+            } else if(date1.equals(date2)){
+                bigger = true;
+            }
+            /*if(date1.compareTo(date2) > 0){
+                bigger = false;
+            } else if(date1.compareTo(date2) < 0) {
+                bigger =true;
+            } else if(date1.compareTo(date2) == 0) {
+                bigger =true;
+            }*/
+        }catch (Exception e){
+
+        }
+
+
+        return bigger;
+    }
+
+    public static long getFileSize(String path) {
+        //String filepath = Environment.getExternalStorageDirectory() + "/file.mp4";
+        File file = new File(path);
+        Log.d("FILE_SIZE",String.valueOf(file.length()));
+        return file.length(); //in Kb
+    }
+
+    public static String getRealPathFromURI(Context context, Uri uri) {
+
+        Cursor returnCursor =  context.getContentResolver().query(uri, null, null, null, null);
+        int nameIndex = returnCursor.getColumnIndex( OpenableColumns.DISPLAY_NAME);
+
+        returnCursor.moveToFirst();
+        String name = (returnCursor.getString(nameIndex));
+
+        File file = new File(context.getFilesDir(), name);
+        try {
+            InputStream inputStream = context.getContentResolver().openInputStream(uri);
+            FileOutputStream outputStream = new FileOutputStream(file);
+            int read = 0;
+            int maxBufferSize = 1 * 1024 * 1024;
+            int bytesAvailable = inputStream.available();
+
+            int bufferSize = Math.min(bytesAvailable, maxBufferSize);
+
+            final byte[] buffers = new byte[bufferSize];
+            while ((read = inputStream.read(buffers)) != -1) {
+                outputStream.write(buffers, 0, read);
+            }
+
+            inputStream.close();
+            outputStream.close();
+            //AppUtils.showToast(context, "Path " + file.getAbsolutePath());
+            returnCursor.close();
+            return file.getAbsolutePath();
+        } catch (Exception e) {
+            Log.e("Exception", e.getMessage());
+            return "";
+        }
+
+    }
+
+    public static String getFileName() {
+        try{
+            String timeStamp =
+                    new SimpleDateFormat("yyyyMMdd_HHmmss",
+                            Locale.getDefault()).format(new Date());
+            return "IMG_" + timeStamp +".jpg";
+        }catch (Exception e){
+            return "IMG_" + "timeStamp" +".jpg";
+        }
+    }
+
+    public static boolean checkPermission(Context context){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R){
+            //Android is 11(R) or above
+            return Environment.isExternalStorageManager();
+        }
+        else{
+            //Android is below 11(R)
+            int write = ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+            int read = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE);
+
+            return write == PackageManager.PERMISSION_GRANTED && read == PackageManager.PERMISSION_GRANTED;
+        }
+    }
+
+    public static String key(Context context){
+
+        SharedPreferenceHelper sharedPreferenceHelper = new SharedPreferenceHelper(context);
+        String text = sharedPreferenceHelper.getStringPreference("gcp");
+        return text;
     }
 }

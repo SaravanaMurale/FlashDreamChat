@@ -7,6 +7,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -168,7 +169,8 @@ public class AgoraSingleVideoCallActivity extends AppCompatActivity {
 
         try {
             RtcEngineConfig config = new RtcEngineConfig();
-            config.mAppId = getString(R.string.agora_app_id);
+            SharedPreferences prefs = getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
+            config.mAppId = prefs.getString("appId", "");
             config.mContext = this;
             config.mEventHandler = mRtcEventHandler;
             config.mAreaCode = 0xFFFFFFFF;

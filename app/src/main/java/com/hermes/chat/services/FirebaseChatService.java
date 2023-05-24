@@ -75,6 +75,8 @@ public class FirebaseChatService {
     private int i = 0;
     private Context context;
     public static boolean isChatServiceStarted = false;
+    String time="Turn off";
+    Boolean adminBlocked=false;
 
     public FirebaseChatService() {
     }
@@ -134,6 +136,8 @@ public class FirebaseChatService {
                     group = intent.getParcelableExtra("chatDataGroup");
                 }
                 int type = intent.getIntExtra("attachment_type", -1);
+                time = intent.getStringExtra("disappear");
+                adminBlocked = intent.getBooleanExtra("adminBlk", false);
                 String attachmentFilePath = intent.getStringExtra("attachment_file_path");
                 String attachmentChatChild = intent.getStringExtra("attachment_chat_child");
                 String attachmentRecipientId = intent.getStringExtra("attachment_recipient_id");
@@ -213,12 +217,16 @@ public class FirebaseChatService {
                              String new_msg_id, String statusUrl) {
         //Create message object
         String body = "";
+        boolean isBlocked= false;
         String[] registration_ids = new String[]{};
+
         Helper.deleteMessageFromRealm(rChatDb, new_msg_id);
         Message message = new Message();
         message.setAttachmentType(attachmentType);
+
         if (attachmentType != AttachmentTypes.NONE_TEXT)
             message.setAttachment(attachment);
+        message.setDisappearing_message(time);
         message.setBody(messageBody);
         message.setDate(System.currentTimeMillis());
         message.setSenderId(userMe.getId());
@@ -242,8 +250,15 @@ public class FirebaseChatService {
         else if (attachmentType == AttachmentTypes.RECORDING)
             body = context.getString(R.string.recording);
 
+
+
         if (!userOrGroupId.startsWith(Helper.GROUP_PREFIX) && userHashMap.get(userOrGroupId).getBlockedUsersIds() != null
                 && userHashMap.get(userOrGroupId).getBlockedUsersIds().contains(userMe.getId())) {
+            message.setBlocked(true);
+        }
+
+        if(adminBlocked){
+
             message.setBlocked(true);
         }
 
@@ -424,7 +439,7 @@ public class FirebaseChatService {
         // This uses android:parentActivityName and
         // android.support.PARENT_ACTIVITY meta-data by default
         stackBuilder.addNextIntentWithParentStack(chatActivity);
-        PendingIntent pendingIntent = stackBuilder.getPendingIntent(99, PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent pendingIntent = stackBuilder.getPendingIntent(99, PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
 
         NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         NotificationCompat.Builder notificationBuilder = null;
@@ -437,7 +452,7 @@ public class FirebaseChatService {
         }
 
         Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-        notificationBuilder.setSmallIcon(R.drawable.ic_logo_)
+        notificationBuilder.setSmallIcon(R.mipmap.ic_app_icon_hermes)
                 .setContentTitle("Group: " + group.getName())
                 .setContentText("You have been added to new group called " + group.getName())
                 .setAutoCancel(true)
@@ -555,10 +570,13 @@ public class FirebaseChatService {
                         ArrayList<String> blockedUsers = new ArrayList<>();
                         blockedUsers.addAll(value.getBlockedUsersIds());
                         chat.getUser().setBlockedUsersIds(blockedUsers);
+
+                        ArrayList<String> connect_list = new ArrayList<>();
+                        connect_list.addAll(value.getConnect_list());
+                        chat.getUser().setConnect_list(connect_list);
                     }
                 });
             }
-
         }
     }
 
@@ -900,7 +918,7 @@ public class FirebaseChatService {
             // This uses android:parentActivityName and
             // android.support.PARENT_ACTIVITY meta-data by default
             stackBuilder.addNextIntentWithParentStack(chatActivity);
-            PendingIntent pendingIntent = stackBuilder.getPendingIntent(99, PendingIntent.FLAG_UPDATE_CURRENT);
+            PendingIntent pendingIntent = stackBuilder.getPendingIntent(99, PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
 
             NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
             NotificationCompat.Builder notificationBuilder = null;
@@ -921,7 +939,7 @@ public class FirebaseChatService {
                 }
             }
             Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-            notificationBuilder.setSmallIcon(R.drawable.ic_logo_)
+            notificationBuilder.setSmallIcon(R.mipmap.ic_app_icon_hermes)
                     .setContentTitle(userOrGroupId.startsWith(Helper.GROUP_PREFIX) ? chat[0].getGroup().getName()
                             : contactname.isEmpty() ? chat[0].getUser().getName() : contactname)
                     .setContentText(getContent(message))
@@ -973,6 +991,15 @@ public class FirebaseChatService {
         intent.putExtra("what", what);
         LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(context);
         localBroadcastManager.sendBroadcast(intent);
+    }
+
+    public void removeListener() {
+        if(userHashMap!= null){
+            for (String keys : userHashMap.keySet()) {
+                registerChatUpdates(false, keys);
+            }
+            userHashMap.clear();
+        }
     }
 
 }

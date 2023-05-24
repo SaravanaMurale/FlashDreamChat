@@ -152,7 +152,16 @@ public class WorkerThread extends Thread {
 
     private RtcEngine ensureRtcEngineReadyLock() {
         if (mRtcEngine == null) {
+
             String appId = mContext.getString(R.string.agora_app_id);
+            /*String appId="";
+            try{
+                SharedPreferences prefs = mContext.getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
+                 appId = prefs.getString("appId", "");
+            }catch (Exception e){
+
+            }*/
+
             if (TextUtils.isEmpty(appId)) {
                 throw new RuntimeException("NEED TO use your App ID, get your own ID at https://dashboard.agora.io/");
             }

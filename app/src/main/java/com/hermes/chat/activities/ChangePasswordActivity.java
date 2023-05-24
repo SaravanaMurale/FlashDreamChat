@@ -122,7 +122,8 @@ public class ChangePasswordActivity extends AppCompatActivity {
             Toast.makeText(this, "Password must be more than 5",
                     Toast.LENGTH_LONG).show();
         } else {
-            initiateAuth(helper.getPhoneNumberForVerification());
+            updatePassword(confirmPassword.getText().toString());
+//            initiateAuth(helper.getPhoneNumberForVerification());
         }
     }
 
@@ -279,18 +280,27 @@ public class ChangePasswordActivity extends AppCompatActivity {
                         public void onSuccess(Void aVoid) {
                             helper.setPassword(password);
                             helper.setIsNew(0);
+                            helper.setLoggedInUser(user);
                             progressDialog.dismiss();
                             Toast.makeText(ChangePasswordActivity.this,
                                     Helper.getChangePwd(ChangePasswordActivity.this).getLblPwdSuccess(),
                                     Toast.LENGTH_SHORT).show();
+                            /*startActivity(new Intent(ChangePasswordActivity.this,
+                                    MainActivity.class));
+                            finish();*/
 
-                           /* if(getIntent().getStringExtra("from").equalsIgnoreCase("login"))
+
+                           if(getIntent().getExtras().containsKey("from") && getIntent().getStringExtra("from").equalsIgnoreCase("login"))
                             {
-                                startActivity(new Intent(ChangePasswordActivity.this, ProfileActivity.class));
-                            } else {*/
-                                startActivity(new Intent(ChangePasswordActivity.this,
-                                        UserNameSignInActivity.class));
-                           /* }*/
+                               startActivity(new Intent(ChangePasswordActivity.this,
+                                    MainActivity.class));
+                               finish();
+                            } else {
+                               /*startActivity(new Intent(ChangePasswordActivity.this,
+                                       MainActivity.class));*/
+                                finish();
+
+                            }
 
                         }
                     }).addOnFailureListener(new OnFailureListener() {

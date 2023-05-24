@@ -1,14 +1,18 @@
 package com.hermes.chat.fragments;
 
+import static android.content.Context.LAYOUT_INFLATER_SERVICE;
 import static com.hermes.chat.utils.Helper.getProfileData;
 import static com.hermes.chat.utils.Helper.getSettingsData;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -16,6 +20,8 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -34,10 +40,13 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.hermes.chat.BaseApplication;
 import com.hermes.chat.R;
+import com.hermes.chat.adapters.DisappearingListAdapter;
 import com.hermes.chat.adapters.GroupNewParticipantsAdapter;
+import com.hermes.chat.adapters.LanguageListAdapter;
 import com.hermes.chat.adapters.MediaSummaryAdapter;
 import com.hermes.chat.interfaces.OnUserDetailFragmentInteraction;
 import com.hermes.chat.interfaces.UserGroupSelectionDismissListener;
+import com.hermes.chat.models.Disappear;
 import com.hermes.chat.models.Group;
 import com.hermes.chat.models.Message;
 import com.hermes.chat.models.User;
@@ -55,11 +64,16 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 
 import io.realm.RealmList;
 
 public class ChatDetailFragment extends Fragment implements GroupNewParticipantsAdapter.ParticipantClickListener {
+
+    private static final String TAG = "ChatDetailFragment";
     private static final int CALL_REQUEST_CODE = 911;
     private OnUserDetailFragmentInteraction mListener;
 
@@ -83,10 +97,15 @@ public class ChatDetailFragment extends Fragment implements GroupNewParticipants
     private TextView blockUser;
     private LinearLayout statusLayout;
     private ArrayList<User> myUsers;
-    private TextView phoneNumberTitle;
+    private TextView phoneNumberTitle, disappearTime;
+    ArrayList<HashMap<String, String>> disAppear;
 
     IntentFilter filter;
     private Context context;
+    ProgressDialog dlg;
+    AlertDialog dialog;
+
+    String time = "Turn Off";
 
     public ChatDetailFragment() {
         // Required empty public constructor
@@ -129,8 +148,18 @@ public class ChatDetailFragment extends Fragment implements GroupNewParticipants
         statusLayout = view.findViewById(R.id.statusLayout);
         mediaSummaryContainer = view.findViewById(R.id.mediaSummaryContainer);
         mediaSummaryViewAll = view.findViewById(R.id.mediaSummaryAll);
+        disappearTime = view.findViewById(R.id.disappearTime);
 
         mediaSummary = (RecyclerView) view.findViewById(R.id.mediaSummary);
+
+        disappearTime.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View view)
+            {
+                callDisappearingMessage();
+            }
+        });
 
         if (user != null) {
             userDetailContainer.setVisibility(View.VISIBLE);
@@ -186,6 +215,162 @@ public class ChatDetailFragment extends Fragment implements GroupNewParticipants
         LocalBroadcastManager.getInstance(context).registerReceiver(receiver,
                 new IntentFilter("custom-event-name"));
         return view;
+    }
+
+    private void callDisappearingMessage()
+    {
+        {
+            showPDialog();
+            BaseApplication.getDisappearRef().addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                    Log.e("Key", "onChildAdded: ");
+                    HashMap<Object, Object> list = new HashMap<>();
+                    list = (HashMap<Object, Object>) dataSnapshot.getValue();
+                    List<String> items = new ArrayList<>();
+                    for (Object keys : list.keySet()) {
+                        items.add((String) keys);
+                    }
+                    dismissDialog();
+                    loadDisappearing(items);
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                }
+            });
+
+        }
+    }
+
+    private void loadDisappearing(List<String> items)
+    {
+        final AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getContext());
+        List<String> data = new ArrayList<>();
+
+        for(int i =0;i<items.size();i++ ){
+            data.add(items.get(i));
+        }
+        data.add("Turn off");
+        items.clear();
+        items.addAll(data);
+        LayoutInflater inflater = (LayoutInflater) getActivity().
+                getSystemService(LAYOUT_INFLATER_SERVICE);
+        View view = inflater.inflate(R.layout.dialog_language_list, null);
+        alertDialogBuilder.setView(view);
+        alertDialogBuilder.setCancelable(false);
+        RecyclerView rvLanguageList = view.findViewById(R.id.rv_languagelist);
+        TextView title = view.findViewById(R.id.title);
+        title.setText("Choose Options");
+        rvLanguageList.setLayoutManager(new LinearLayoutManager(getActivity(),
+                LinearLayoutManager.VERTICAL, false));
+        rvLanguageList.setHasFixedSize(true);
+        rvLanguageList.setAdapter(new DisappearingListAdapter(getActivity(), items,
+                ChatDetailFragment.this, time));
+
+        int width = (int) (getResources().getDisplayMetrics().widthPixels * 0.90);
+        int height = (int) (getResources().getDisplayMetrics().heightPixels * 0.50);
+
+        dialog = alertDialogBuilder.create();
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.show();
+        dialog.getWindow().addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
+        dialog.getWindow().setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT);
+    }
+
+    public void addToSharedPref(String msg){
+//        Log.d(TAG, "addToSharedPref: "+msg);
+        disappearTime.setText(msg);
+        HashMap<String,String> list = new HashMap<>();
+        RealmList<HashMap<String,String>> disappears = new RealmList<>();
+        if(userMe.disappearing_list!=null && userMe.disappearing_list.size()>0){
+           /* for(int i=0;i<userMe.disappearing_list.size();i++){
+                if(!userMe.disappearing_list.get(i).get("key").equalsIgnoreCase(user.getId())){
+                    disappears.add(userMe.disappearing_list.get(i));
+                }*/
+            for(int i=0;i<userMe.disappearing_list.size();i++)
+            {
+                for (String key : userMe.getDisappearing_list().get(i).keySet())
+                {
+                    Log.d(TAG, "userMe: " + key + " === " + user.getId());
+                    if (!key.trim().equals(user.getId().trim()))
+                    {
+                        disappears.add(userMe.disappearing_list.get(i));
+                        /*userTime = userMe.getDisappearing_list().get(i).get(user.getId());
+                        Log.d(TAG, "getDisappearing_list: " + userTime);*/
+                    }
+                    System.out.println();
+                }
+            }
+
+            }
+
+        list.put(user.getId(),msg);
+        disappears.add(list);
+       /* disappears.add(new Disappear(String.valueOf(user.getId()),msg+ " Minutes"));
+        user.setDisappearing_list(disappears);*/
+
+        userMe.setDisappearing_list(new ArrayList<>(disappears));
+        helper.setLoggedInUser(userMe);
+        BaseApplication.getUserRef().child(userMe.getId()).child("disappearing_list").setValue(disappears);
+
+
+        /*SharedPreferences prefs = requireContext().getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
+        prefs.edit().putString("disappear", msg).apply();
+        disappearTime.setText(msg+" Minutes");
+        HashMap<String,String> data= new HashMap<>();
+        Log.d(TAG, "addToSharedPref: "+user.getId()+" ==== "+msg);
+        data.put(user.getId(),msg);*/
+       /* BaseApplication.getUserRef().addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                String print = "";
+                User user = null;
+                ArrayList<User> users= new ArrayList<>();
+                disAppear = new ArrayList<>();
+                disAppear.add(data);
+                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                    try {
+                        user = snapshot.getValue(User.class);
+                        if (user.getId() != null){
+
+                            users.add(user);
+                            if(user.getId().equals(userMe.getId())){
+                                disAppear.addAll(user.getDisappearList());
+                            }
+
+                        }
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    
+                }
+                user.setDisappearList(disAppear);
+
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
+        user.setDisappearList(disAppear);*/
+        dialog.dismiss();
+    }
+
+    private void showPDialog() {
+        dlg = new ProgressDialog(getActivity());
+        dlg.setMessage("Loading. . .");
+        dlg.setCancelable(false);
+        dlg.show();
+    }
+
+    private void dismissDialog() {
+        if (dlg != null && dlg.isShowing()) {
+            dlg.dismiss();
+        }
     }
 
     BroadcastReceiver receiver = new BroadcastReceiver() {
@@ -307,6 +492,23 @@ public class ChatDetailFragment extends Fragment implements GroupNewParticipants
                 }
             });
 
+            Log.d(TAG, "onSuccess: "+userMe.getDisappearing_list().size());
+
+            if(userMe.getDisappearing_list()!=null && userMe.getDisappearing_list().size()>0){
+                for (int i=0;i<userMe.getDisappearing_list().size();i++){
+                    for ( String key : userMe.getDisappearing_list().get(i).keySet() ) {
+                        Log.d(TAG, "userMe: "+key+ " === " +user.getId());
+                        if(key.trim().equals(user.getId().trim())){
+                            disappearTime.setText(userMe.getDisappearing_list().get(i).get(user.getId()));
+                            time = userMe.getDisappearing_list().get(i).get(user.getId());
+                            Log.d(TAG, "getDisappearing_list: "+time);
+                        }
+                        System.out.println(  );
+                    }
+
+                }
+            }
+
             blockUser.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -328,6 +530,8 @@ public class ChatDetailFragment extends Fragment implements GroupNewParticipants
                                                             @Override
                                                             public void onSuccess(Void aVoid) {
                                                                 helper.setLoggedInUser(userMe);
+
+
                                                                 if (userMe.getBlockedUsersIds() != null &&
                                                                         userMe.getBlockedUsersIds().contains(user.getId())) {
                                                                     blockUser.setText(getProfileData(getContext()).getLblUnblock());
@@ -462,25 +666,32 @@ public class ChatDetailFragment extends Fragment implements GroupNewParticipants
     }
 
     private void fetchUserFromFirebase(String memberId) {
-        BaseApplication.getUserRef().child(memberId).addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                try {
-                    User user = dataSnapshot.getValue(User.class);
-                    groupUsers.add(user);
-                    participantsProgress.setVisibility(View.GONE);
-                     selectedParticipantsAdapter = new GroupNewParticipantsAdapter(ChatDetailFragment.this, ChatDetailFragment.this, groupUsers, userMe, group.getId(), group.getAdmin());
-                    participantsCount.setText(String.format(getProfileData(getContext()).getLblParticipants() + " (%d)", selectedParticipantsAdapter.getItemCount()));
-                } catch (Exception ex) {
-                    Log.e("USER", "invalid user");
+        try
+        {
+            BaseApplication.getUserRef().child(memberId).addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    try {
+                        User user = dataSnapshot.getValue(User.class);
+                        groupUsers.add(user);
+                        participantsProgress.setVisibility(View.GONE);
+                        selectedParticipantsAdapter = new GroupNewParticipantsAdapter(ChatDetailFragment.this, ChatDetailFragment.this, groupUsers, userMe, group.getId(), group.getAdmin());
+                        participantsCount.setText(String.format(getProfileData(getContext()).getLblParticipants() + " (%d)", selectedParticipantsAdapter.getItemCount()));
+                    } catch (Exception ex) {
+                        Log.e("USER", "invalid user");
+                    }
                 }
-            }
 
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
 
-            }
-        });
+                }
+            });
+
+        }catch (Exception e){
+
+        }
+
     }
 
     public void notifyGroupUpdated(Group valueGroup) {

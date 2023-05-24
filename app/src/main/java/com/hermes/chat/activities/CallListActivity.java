@@ -5,8 +5,12 @@ import static com.hermes.chat.utils.Helper.createRandomChannelName;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.text.Html;
+import android.util.Log;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -14,9 +18,13 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SearchView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.ValueEventListener;
 import com.hermes.chat.BaseApplication;
 import com.hermes.chat.R;
 import com.hermes.chat.adapters.CallListAdapter;
@@ -33,6 +41,7 @@ import com.hermes.chat.pushnotification.Data;
 import com.hermes.chat.pushnotification.Notification;
 import com.hermes.chat.pushnotification.SendFirebaseNotification;
 import com.hermes.chat.services.FetchMyUsersService;
+import com.hermes.chat.services.FirebaseCallService;
 import com.hermes.chat.utils.Helper;
 import com.google.gson.Gson;
 
@@ -58,7 +67,7 @@ public class CallListActivity extends BaseActivity {
         this.myUsers.clear();
         this.myUsers.addAll(myUsers);
         try {
-            callListAdapter.notifyDataSetChanged();
+            callListAdapter.updateReceiptsList(this.myUsers);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -85,6 +94,7 @@ public class CallListActivity extends BaseActivity {
         if (userMe.getId().equalsIgnoreCase(valueUser.getId())) {
             valueUser.setNameInPhone(helper.getLoggedInUser().getNameInPhone());
             helper.setLoggedInUser(valueUser);
+            MainActivity.myUsers.size();
             callListAdapter = new CallListAdapter(CallListActivity.this, MainActivity.myUsers,
                     helper.getLoggedInUser());
             callListRecyclerView.setAdapter(callListAdapter);
@@ -143,6 +153,13 @@ public class CallListActivity extends BaseActivity {
         emptyText = findViewById(R.id.emptyText);
         titleNewCall = findViewById(R.id.titleNewCall);
 
+        //searchview color change
+        EditText searchEditText = searchView.findViewById(androidx.appcompat.R.id.search_src_text);
+        searchEditText.setTextColor(getResources().getColor(R.color.colorIcon));
+        searchEditText.setHint("Search User");
+        searchEditText.setHintTextColor(getResources().getColor(R.color.colorIcon));
+
+        callListRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         searchView.setIconified(true);
 //        ImageView searchIcon = searchView.findViewById(R.id.search_button);
 //        searchIcon.setImageDrawable(ContextCompat.getDrawable(CallListActivity.this, R.drawable.ic_search_white));
@@ -196,18 +213,75 @@ public class CallListActivity extends BaseActivity {
     }
 
     private void fetchContacts() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
-                == PackageManager.PERMISSION_GRANTED) {
-            if (!FetchMyUsersService.STARTED) {
+        BaseApplication.getUserRef()
+                .addListenerForSingleValueEvent(
+                        new ValueEventListener() {
+                            @Override
+                            public void onDataChange(DataSnapshot dataSnapshot) {
+                                String print = "";
+                                User user;
+                                ArrayList<User> users= new ArrayList<>();
+                                ArrayList<String> connectList = new ArrayList<>();
+                                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                                    try {
+                                        user = snapshot.getValue(User.class);
+                                        if (user.getId() != null){
+
+                                            users.add(user);
+                                            if(user.getId().equals(userMe.getId())){
+                                                connectList.addAll(user.getConnect_list());
+                                            }
+
+                                        }
+
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+
+                                for(int i=0;i<users.size();i++){
+                                    for(int j=0;j<connectList.size();j++){
+                                        try
+                                        {
+                                            if(connectList.get(j).equals(users.get(i).getId())){
+                                                myUsers.add(users.get(i));
+
+                                            }
+                                        }catch (Exception e){
+
+                                        }
+                                    }
+                                }
+                                callListAdapter.updateReceiptsList(myUsers);
+                                /*new FetchMyUsersService(CallListActivity.this, userMe.getId());
+                                new FirebaseCallService(CallListActivity.this, userMe.getId());*/
+
+
+
+
+                            }
+
+                            @Override
+                            public void onCancelled(DatabaseError databaseError) {
+
+                            }
+                        });
+
+    }
+
+    /*private void fetchContacts() {
+        *//*if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
+                == PackageManager.PERMISSION_GRANTED) {*//*
+           *//* if (!FetchMyUsersService.STARTED) {
                 if (!swipeMenuRecyclerView.isRefreshing())
                     swipeMenuRecyclerView.setRefreshing(true);
                 new FetchMyUsersService(CallListActivity.this, userMe.getId());
-            }
-        } else {
+            }*//*
+        *//*} else {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_CONTACTS},
                     CONTACTS_REQUEST_CODE);
-        }
-    }
+        }*//*
+    }*/
 
     public void forwardToRoom(String type, boolean callIsVideo, User user) {
         BaseApplication.getUserRef().child(userMe.getId())

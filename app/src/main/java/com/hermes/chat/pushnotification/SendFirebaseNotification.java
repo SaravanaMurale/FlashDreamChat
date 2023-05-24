@@ -1,9 +1,27 @@
 package com.hermes.chat.pushnotification;
 
+import android.Manifest;
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.os.Build;
+import android.util.Base64;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
+
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.ValueEventListener;
+import com.hermes.chat.BaseApplication;
 import com.hermes.chat.R;
+import com.hermes.chat.utils.FileUtils;
+
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -69,19 +87,47 @@ public class SendFirebaseNotification {
     }*/
 
     private void sendNotification(Message notification) {
-        ApiInterface apiService =
-                ApiClient.getClient().create(ApiInterface.class);
-        Call<Message> call = apiService.fcmSend("key=" + mContext.getString(R.string.firebase_server_key), notification);
-        call.enqueue(new Callback<Message>() {
+        final String[] fcmKey = {""};
+
+        BaseApplication.getKeyData().addListenerForSingleValueEvent(new ValueEventListener() {
+
             @Override
-            public void onResponse(Call<Message> call, Response<Message> response) {
-                Log.d("success", "success");
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                Log.e("Key", "onChildAdded: ");
+                List<String> items;
+                HashMap<String, String> list = new HashMap<>();
+                list = (HashMap<String, String>) dataSnapshot.getValue();
+                for (String keys: list.keySet()) {
+                    Log.d(TAG, "keys: "+keys);
+                    if(keys.equalsIgnoreCase("fcm")){
+                        fcmKey[0] = list.get(keys).toString();
+                        ApiInterface apiService =
+                                ApiClient.getClient().create(ApiInterface.class);
+                        Log.d(TAG, "sendNotification: "+fcmKey[0]);
+                        Call<Message> call = apiService.fcmSend("key=" + fcmKey[0], notification);
+                        call.enqueue(new Callback<Message>() {
+                            @Override
+                            public void onResponse(Call<Message> call, Response<Message> response) {
+                                Log.d("success", "success");
+                            }
+
+                            @Override
+                            public void onFailure(Call<Message> call, Throwable t) {
+                                Log.d("onFailure", "onFailure");
+                            }
+                        });
+                    }
+
+                }
+
             }
 
             @Override
-            public void onFailure(Call<Message> call, Throwable t) {
-                Log.d("onFailure", "onFailure");
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
             }
         });
+
+
     }
 }

@@ -69,10 +69,10 @@ public class CallReceivers extends BroadcastReceiver {
         PendingIntent ContentPendingIntent = PendingIntent.getActivity(context,
                 0,
                 ContentIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT);
+                PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
 
         mBuilder = new NotificationCompat.Builder(context, "Call")
-                .setSmallIcon(R.drawable.ic_logo_)
+                .setSmallIcon(R.mipmap.ic_app_icon_hermes)
                 .setContentTitle(title)
                 .setContentText(message)
                 .setColor(context.getResources().getColor(R.color.colorPrimaryDark))

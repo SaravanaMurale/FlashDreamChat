@@ -103,6 +103,15 @@ public class MyGroupsFragment extends Fragment {
         Realm.init(getContext());
         rChatDb = Helper.getRealmInstance();
         userMe = homeInteractor.getUserMe();
+        try
+        {
+            if(userMe.getAdminblock()){
+                mainActivity.checkBlocked();
+            }
+        }catch (Exception E){
+
+        }
+
     }
 
     @Nullable
@@ -115,8 +124,8 @@ public class MyGroupsFragment extends Fragment {
         recyclerView.setEmptyView(view.findViewById(R.id.emptyView));
         recyclerView.setEmptyImageView(((ImageView) view.findViewById(R.id.emptyImage)));
         TextView emptyTextView = view.findViewById(R.id.emptyText);
-        Log.d(TAG, "onCreateViewTAG: "+getGroupData(mainActivity).getLblEmptyGroup());
-        emptyTextView.setText(getGroupData(mainActivity).getLblEmptyGroup());
+//        Log.d(TAG, "onCreateViewTAG: "+getGroupData(mainActivity).getLblEmptyGroup());
+//        emptyTextView.setText(getGroupData(mainActivity).getLblEmptyGroup());
         recyclerView.setEmptyTextView(emptyTextView);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -159,6 +168,7 @@ public class MyGroupsFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+
         try {
             RealmQuery<Chat> query = rChatDb.where(Chat.class).equalTo("myId", userMe.getId());//Query from chats whose owner is logged in user
             resultList = query.isNotNull("group").sort("timeUpdated", Sort.DESCENDING).findAll();//ignore forward list of messages and get rest sorted according to time

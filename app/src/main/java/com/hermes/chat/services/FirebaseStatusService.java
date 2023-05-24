@@ -3,6 +3,8 @@ package com.hermes.chat.services;
 import android.content.Context;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+
 import com.hermes.chat.BaseApplication;
 import com.hermes.chat.activities.MainActivity;
 import com.hermes.chat.models.AttachmentList;
@@ -18,6 +20,7 @@ import com.google.firebase.database.DatabaseError;
 
 import io.realm.Realm;
 import io.realm.RealmList;
+import io.realm.RealmResults;
 
 public class FirebaseStatusService {
 
@@ -224,7 +227,14 @@ public class FirebaseStatusService {
 
             @Override
             public void onChildRemoved(DataSnapshot dataSnapshot) {
-
+                MessageNewArrayList message = dataSnapshot.getValue(MessageNewArrayList.class);
+                rChatDb.executeTransaction(new Realm.Transaction() {
+                    @Override
+                    public void execute(@NonNull Realm realm) {
+                        RealmResults<StatusNew> rows = realm.where(StatusNew.class).equalTo("userId", message.getSenderId()).findAll();
+                        rows.deleteAllFromRealm();
+                    }
+                });
             }
 
             @Override

@@ -5,7 +5,9 @@ import static com.hermes.chat.utils.Helper.LANGUAGE;
 import android.Manifest;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -21,9 +23,13 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DatabaseReference;
 import com.hermes.chat.BaseApplication;
 import com.hermes.chat.R;
 import com.hermes.chat.adapters.LanguageListAdapter;
@@ -50,6 +56,8 @@ import java.util.Locale;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import io.realm.Realm;
+import io.realm.RealmList;
 
 public class UserNameSignInActivity extends AppCompatActivity {
 
@@ -74,6 +82,8 @@ public class UserNameSignInActivity extends AppCompatActivity {
     android.app.AlertDialog dialog;
     List<String> items;
     public static int pos = 0;
+    private DatabaseReference idChatRef;
+
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -81,6 +91,8 @@ public class UserNameSignInActivity extends AppCompatActivity {
         setContentView(R.layout.activity_username_login);
         ButterKnife.bind(this);
         Log.d(TAG, "onCreate: created");
+        SharedPreferences prefs = getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
+        prefs.edit().putString("LoggedIn","false");
         uiInit();
     }
 
@@ -88,7 +100,8 @@ public class UserNameSignInActivity extends AppCompatActivity {
 
         Dexter.withActivity(this)
                 .withPermissions(
-                        Manifest.permission.READ_CONTACTS,
+                        /*Manifest.permission.READ_CONTACTS,*/
+                        Manifest.permission.POST_NOTIFICATIONS,
                         Manifest.permission.CAMERA,
                         Manifest.permission.READ_EXTERNAL_STORAGE,
                         Manifest.permission.WRITE_EXTERNAL_STORAGE,
@@ -132,6 +145,7 @@ public class UserNameSignInActivity extends AppCompatActivity {
         switch (view.getId()) {
             case R.id.btnSubmit:
                 progressDialog.setMessage(Helper.getLoginData(UserNameSignInActivity.this).getLblEnterLoading());
+//                fetchUsers();
                 validate();
                 break;
             case R.id.btnRegister:
@@ -153,36 +167,72 @@ public class UserNameSignInActivity extends AppCompatActivity {
                     Helper.getLoginData(UserNameSignInActivity.this).getLblPassword(), Toast.LENGTH_SHORT).show();
         } else {
             progressDialog.show();
+            Log.d(TAG, "users count: "+ users.size());
             for (User item : users) {
-                Log.d(TAG, "validate: "+item.getIs_new()+" user email "+item.getEmail());
-                if(item.getEmail().equals(username.getText().toString())){
-                    isFound = true;
-                    if (item.getPassword().equals(password.getText().toString())) {
-                        helper.setLoggedInUser(item);
-                        helper.setEmail(item.getEmail());
-                        helper.setUserName(item.getUsername());
-                        helper.setPassword(item.getPassword());
-                        helper.setPhoneNumberForVerification(item.getId());
-                        progressDialog.dismiss();
-                        if(item.getIs_new()==1){
-                            Intent changePass = new Intent(UserNameSignInActivity.this, ChangePasswordActivity.class);
-                            changePass.putExtra("from", "login");
-                            startActivity(changePass);
-                            finish();
-                        }else {
-                            startActivity(new Intent(UserNameSignInActivity.this, MainActivity.class));
-                            finish();
-                        }
+                Log.d(TAG, "validate: "+item.getIs_new()+" user email "+item.getEmail()+" === new "+item.getAdminblock());
+                if(item.getEmail().equals(username.getText().toString().trim())){
+                    if(!item.getAdminblock()){
+                        isFound = true;
+                        if (item.getPassword().equals(password.getText().toString())) {
+                            helper.setLoggedInUser(item);
+                            helper.setEmail(item.getEmail());
+                            helper.setUserName(item.getUsername());
+                            helper.setPassword(item.getPassword());
+                            helper.setPhoneNumberForVerification(item.getId());
+                            progressDialog.dismiss();
+                            if(item.getIs_new()==1){
+                                SharedPreferences prefs = getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
+                                prefs.edit().putString("LoggedIn","true").apply();
+                                Intent changePass = new Intent(UserNameSignInActivity.this, ChangePasswordActivity.class);
+                                changePass.putExtra("from", "login");
+                                startActivity(changePass);
+                                finish();
+                            }else {
+                                SharedPreferences prefs = getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
+                                prefs.edit().putString("LoggedIn","true").apply();
+                                startActivity(new Intent(UserNameSignInActivity.this, MainActivity.class));
+                                finish();
+                            }
 
-                        return;
+                            return;
+                        } else {
+                            progressDialog.dismiss();
+                            isFound = false;
+                            Toast.makeText(UserNameSignInActivity.this, Helper.
+                                            getLoginData(UserNameSignInActivity.this).getErrPasswordNotCorrect(),
+                                    Toast.LENGTH_SHORT).show();
+                            return;
+                        }
                     } else {
                         progressDialog.dismiss();
                         isFound = false;
-                        Toast.makeText(UserNameSignInActivity.this, Helper.
-                                        getLoginData(UserNameSignInActivity.this).getErrPasswordNotCorrect(),
+                        Toast.makeText(UserNameSignInActivity.this, "Blocked by Admin",
                                 Toast.LENGTH_SHORT).show();
+                        try {
+//                idChatRef.removeEventListener(valueEventListener);
+                            helper.setCacheMyUsers(new ArrayList<>());
+                            FirebaseAuth.getInstance().signOut();
+                            LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(new Intent(Helper.BROADCAST_LOGOUT));
+//                                    sinchServiceInterface.stopClient();
+                            helper.clearPhoneNumberForVerification();
+                            helper.logout();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                        try {
+                            Helper.getRealmInstance().executeTransaction(new Realm.Transaction() {
+                                @Override
+                                public void execute(Realm realm) {
+                                    realm.deleteAll();
+                                }
+                            });
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                        fetchUsers();
                         return;
                     }
+
                 }
                /* if (item.getUsername().equals(username.getText().toString())) {
                     isFound = true;
@@ -217,6 +267,25 @@ public class UserNameSignInActivity extends AppCompatActivity {
     private void fetchUsers() {
         users = new ArrayList<>();
         progressDialog.show();
+
+        /*BaseApplication.getUserRef().addValueEventListener(new ValueEventListener()
+                                                           {
+                                                               @Override
+                                                               public void onDataChange(@NonNull DataSnapshot snapshot)
+                                                               {
+                                                                   String print = "";
+                                                                   User user = snapshot.getValue(User.class);
+                                                                   print = print + "\n" + "user: "+user.getUsername() +"  pass: "+ user.getPassword() + " new "+ user.getIs_new()+" block "+user.getAdminblock();
+                                                                   Log.d(TAG, "onDataChange: "+print);
+                                                               }
+
+                                                               @Override
+                                                               public void onCancelled(@NonNull DatabaseError error)
+                                                               {
+
+                                                               }
+                                                           });*/
+
         BaseApplication.getUserRef()
                 .addListenerForSingleValueEvent(
                         new ValueEventListener() {
@@ -229,8 +298,17 @@ public class UserNameSignInActivity extends AppCompatActivity {
                                         try {
                                             User user = snapshot.getValue(User.class);
                                             if (user.getId() != null){
+                                                /*if(user.getDisappearing_list()!=null && user.getDisappearing_list().size()>0){
+                                                    RealmList<HashMap<String,String>> disappList = new RealmList<>();
+                                                    for(int i=0;i<user.getDisappearing_list().size();i++){
+                                                        HashMap<String,String> list= user.getDisappearing_list().get(i);
+                                                        disappList.add(list);
+                                                    }
+                                                    user.setDisappearing_list(disappList);
+
+                                                }*/
                                                 users.add(user);
-                                                print = print + "\n" + "user: "+user.getUsername() +"  pass: "+ user.getPassword() + " new "+ user.getIs_new();
+                                                print = print + "\n" + "user: "+user.getUsername() +"  pass: "+ user.getPassword() + " new "+ user.getIs_new()+" block "+user.getAdminblock();
                                                 Log.d(TAG, "onDataChange: "+print);
                                             }
 
@@ -238,7 +316,7 @@ public class UserNameSignInActivity extends AppCompatActivity {
                                             e.printStackTrace();
                                         }
                                     }
-                                    Log.d(TAG, "onDataChangevalue: "+print);
+                                    Log.d(TAG, "users count: "+users.size());
 
                                 } catch (Exception e) {
                                     e.printStackTrace();
@@ -251,46 +329,78 @@ public class UserNameSignInActivity extends AppCompatActivity {
 
                             }
                         });
+        progressDialog.dismiss();
     }
 
     private void callLang() {
-        showPDialog();
-        BaseApplication.getLangRef().addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                Log.e("Key", "onChildAdded: ");
-                HashMap<Object, Object> list = new HashMap<>();
-                list = (HashMap<Object, Object>) dataSnapshot.getValue();
-                items = new ArrayList<>();
-                for (Object keys : list.keySet()) {
-                    items.add((String) keys);
-                }
-                dismiss();
 
-                if (!SessionHandler.getInstance().getBoolean(UserNameSignInActivity.this, LANGUAGE)) {
-                    loadLanguageDialog(items);
-                } else {
-                    fetchUsers();
-                    try {
-                        title.setText(Helper.getLoginData(UserNameSignInActivity.this).getLblLogin());
-                        //username.setHint(Helper.getLoginData(UserNameSignInActivity.this).getLblUsername());
-                        //New...
-                        username.setHint(Helper.getLoginData(UserNameSignInActivity.this).getLblEmail());
-                        password.setHint(Helper.getLoginData(UserNameSignInActivity.this).getLblPassword());
-                        btnSubmit.setText(Helper.getLoginData(UserNameSignInActivity.this).getLblLogin());
-                        btnRegister.setText(Helper.getLoginData(UserNameSignInActivity.this).getLblRegister());
-                        forgotPassword.setText(Helper.getLoginData(UserNameSignInActivity.this).getLblForgotPassword());
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
+                        if (!SessionHandler.getInstance().getBoolean(UserNameSignInActivity.this, LANGUAGE)) {
+//                    loadLanguageDialog(items);
+                            setLocale("English-en", "en", 0);
 
-            }
-        });
+                } else
+                        {
+
+                            try
+                            {
+                                fetchUsers();
+                            }
+                            catch (Exception e)
+                            {
+                                e.printStackTrace();
+                            }
+                        }
+
+//        BaseApplication.getLangRef().addListenerForSingleValueEvent(new ValueEventListener() {
+//            @Override
+//            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+//                Log.e("Key", "onChildAdded: ");
+//                HashMap<Object, Object> list = new HashMap<>();
+//                list = (HashMap<Object, Object>) dataSnapshot.getValue();
+//                items = new ArrayList<>();
+//                for (Object keys : list.keySet()) {
+//                    items.add((String) keys);
+//                }
+//                dismiss();
+//
+//                if (!SessionHandler.getInstance().getBoolean(UserNameSignInActivity.this, LANGUAGE)) {
+////                    loadLanguageDialog(items);
+//
+//                } else {
+//
+//                    try {
+//                        Helper.getRealmInstance().executeTransaction(new Realm.Transaction() {
+//                            @Override
+//                            public void execute(Realm realm) {
+//                                realm.deleteAll();
+//                            }
+//                        });
+//                    } catch (Exception e) {
+//                        e.printStackTrace();
+//                    }
+//
+//                    try {
+//                        title.setText(Helper.getLoginData(UserNameSignInActivity.this).getLblLogin());
+//                        //username.setHint(Helper.getLoginData(UserNameSignInActivity.this).getLblUsername());
+//                        //New...
+//                        username.setHint(Helper.getLoginData(UserNameSignInActivity.this).getLblEmail());
+//                        password.setHint(Helper.getLoginData(UserNameSignInActivity.this).getLblPassword());
+//                        btnSubmit.setText(Helper.getLoginData(UserNameSignInActivity.this).getLblLogin());
+//                        btnRegister.setText(Helper.getLoginData(UserNameSignInActivity.this).getLblRegister());
+////                        forgotPassword.setText(Helper.getLoginData(UserNameSignInActivity.this).getLblForgotPassword());
+//                    } catch (Exception e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//                fetchUsers();
+//            }
+//
+//            @Override
+//            public void onCancelled(@NonNull DatabaseError databaseError) {
+//
+//            }
+//        });
     }
 
     public void loadLanguageDialog(List<String> languageList) {
@@ -333,14 +443,15 @@ public class UserNameSignInActivity extends AppCompatActivity {
     }
 
     public void setLocale(String localeName, String code, int position) {
+        Log.d(TAG, "setLocale: "+localeName+" === "+code+" === "+position);
         pos = position;
         showPDialog();
         SessionHandler.getInstance().saveBoolean(UserNameSignInActivity.this, LANGUAGE, true);
         LocaleUtils.setLocale(new Locale(code));
         LocaleUtils.updateConfigActivity(this, getBaseContext().getResources().getConfiguration());
-        if (dialog != null)
-            dialog.dismiss();
         getLanguageData(localeName);
+        dismiss();
+
     }
 
 
@@ -355,6 +466,7 @@ public class UserNameSignInActivity extends AppCompatActivity {
     }
 
     private void getLanguageData(String localeName) {
+        showPDialog();
 
         BaseApplication.getLangRef().child(localeName).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
@@ -373,7 +485,9 @@ public class UserNameSignInActivity extends AppCompatActivity {
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
 
+                Log.d(TAG, "onCancelled: "+databaseError);
             }
         });
+        dismiss();
     }
 }

@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/chat_bg"
+    android:background="@drawable/chat_bg_flash_final"
     android:orientation="vertical"
     android:weightSum="1">
 
@@ -43,12 +43,12 @@
                 android:id="@+id/searchView"
                 style="@style/SearchViewStyle"
                 android:layout_width="match_parent"
-                app:iconifiedByDefault="false"
-                android:layout_toEndOf="@id/back_button"
-                app:queryHint="Search User"
                 android:layout_height="wrap_content"
                 android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true" />
+                android:layout_centerVertical="true"
+                android:layout_toEndOf="@id/back_button"
+                app:iconifiedByDefault="false"
+                app:queryHint="Search User" />
 
         </RelativeLayout>
 

@@ -8,7 +8,9 @@ import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityOptions;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -30,11 +32,16 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import androidx.viewpager.widget.ViewPager;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.ValueEventListener;
 import com.hermes.chat.BaseApplication;
 import com.hermes.chat.R;
 import com.hermes.chat.adapters.MenuUsersRecyclerAdapter;
@@ -83,6 +90,8 @@ import io.realm.Realm;
 public class MainActivity extends BaseActivity implements HomeIneractor, OnUserGroupItemClick,
         View.OnClickListener, ContextualModeInteractor, UserGroupSelectionDismissListener,
         PushTokenRegistrationCallback/*, UserRegistrationCallback*/ {
+
+    private static final String TAG = "MainActivity";
     private final int CONTACTS_REQUEST_CODE = 321;
     private static final int REQUEST_CODE_CHAT_FORWARD = 99;
     private static String USER_SELECT_TAG = "userselectdialog";
@@ -119,6 +128,8 @@ public class MainActivity extends BaseActivity implements HomeIneractor, OnUserG
     private long mSigningSequence = 1;
     public CheckBox action_checkBox;
 
+    private DatabaseReference idChatRef;
+
     public DatabaseReference getDatabaseRef() {
         return statusRef;
     }
@@ -140,53 +151,38 @@ public class MainActivity extends BaseActivity implements HomeIneractor, OnUserG
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        initUi();
-        userId = userMe.getId();
-        //setup recyclerview in drawer layout
-        setupMenu();
-
-        //If its a url then load it, else Make a text drawable of user's name
-        setProfileImage(usersImage);
-        usersImage.setOnClickListener(this);
-        backImage.setOnClickListener(this);
-        invite.setOnClickListener(this);
-        findViewById(R.id.action_delete).setOnClickListener(this);
-        floatingActionButton.setOnClickListener(this);
-        floatingActionButton.setVisibility(View.VISIBLE);
-
-        setupViewPager();
-        fetchContacts();
-        markOnline(true);
-        //  loadAdd();
-
-        FirebaseMessaging.getInstance().getToken().addOnCompleteListener(new OnCompleteListener<String>() {
+        /*ValueEventListener valueEventListener = new ValueEventListener() {
             @Override
-            public void onComplete(@NonNull Task<String> task) {
-                if (task.isComplete()) {
-
-                    String token = task.getResult();
-                    Log.i("FCM Token", token);
-                    userMe.setDeviceToken(token);
-                    userMe.setOsType(getString(R.string.osType));
-                    userMe.setTimeStamp(System.currentTimeMillis());
-                    userMe.setOnline(true);
-                    BaseApplication.getUserRef().child(userMe.getId()).setValue(userMe)
-                            .addOnSuccessListener(new OnSuccessListener<Void>() {
-                                @Override
-                                public void onSuccess(Void aVoid) {
-                                    helper.setLoggedInUser(userMe);
-                                }
-                            }).addOnFailureListener(new OnFailureListener() {
-                                @Override
-                                public void onFailure(@NonNull Exception e) {
-
-                                }
-                            });
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                try
+                {
+                    userMe = dataSnapshot.getValue(User.class);
+                    helper.setLoggedInUser(userMe);
+                }catch (Exception e){
 
                 }
 
             }
-        });
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+                Log.i("TAG", databaseError.getMessage());
+            }
+        };
+        idChatRef = BaseApplication.getUserRef().child(userMe.getId());
+        idChatRef.addValueEventListener(valueEventListener);*/
+
+
+        if(userMe.getAdminblock()){
+            checkBlocked();
+        }else {
+            initUi();
+        }
+
+
+        //setup recyclerview in drawer layout
+
+
 
 
      /*   FirebaseInstanceId.getInstance().getInstanceId().addOnSuccessListener(MainActivity.this,
@@ -198,6 +194,57 @@ public class MainActivity extends BaseActivity implements HomeIneractor, OnUserG
                 });*/
     }
 
+    public void checkBlocked()
+    {
+
+
+          /*  BaseApplication.getUserRef().child(userMe.getId()).addValueEventListener(new ValueEventListener()
+            {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot)
+                {
+                    User user= snapshot.getValue(User.class);
+                    if(user.getAdminblock()){*/
+                          try {
+//                idChatRef.removeEventListener(valueEventListener);
+                helper.setCacheMyUsers(new ArrayList<>());
+                FirebaseAuth.getInstance().signOut();
+                LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(new Intent(Helper.BROADCAST_LOGOUT));
+//                                    sinchServiceInterface.stopClient();
+                helper.clearPhoneNumberForVerification();
+                helper.logout();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            try {
+                Helper.getRealmInstance().executeTransaction(new Realm.Transaction() {
+                    @Override
+                    public void execute(Realm realm) {
+                        realm.deleteAll();
+                    }
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+                        SharedPreferences prefs = getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
+                        prefs.edit().putString("LoggedIn","false").apply();
+                        Intent mIntent = new Intent(MainActivity.this, UserNameSignInActivity.class);
+                        mIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(mIntent);
+                        finish();
+                   /* }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error)
+                {
+
+                }
+            });*/
+
+
+    }
+
     /*private void loadAdd() {
         AdView mAdView = findViewById(R.id.adView);
         AdRequest adRequest = new AdRequest.Builder().build();
@@ -205,6 +252,8 @@ public class MainActivity extends BaseActivity implements HomeIneractor, OnUserG
     }*/
 
     private void initUi() {
+        SharedPreferences prefs = getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
+        prefs.edit().putString("LoggedIn","true").apply();
         usersImage = findViewById(R.id.users_image);
         action_checkBox = findViewById(R.id.action_checkBox);
         action_checkBox.setVisibility(View.GONE);
@@ -225,13 +274,22 @@ public class MainActivity extends BaseActivity implements HomeIneractor, OnUserG
         dialog = new ProgressDialog(MainActivity.this);
         dialog.setMessage("Syncing. . .");
         dialog.setCancelable(false);
+        dialog.setCancelable(false);
         dialog.show();
+
+
 
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
-                if (dialog != null && dialog.isShowing())
-                    dialog.dismiss();
+                try
+                {
+                    if (dialog != null && dialog.isShowing())
+                        dialog.dismiss();
+                }catch (Exception e){
+
+                }
+
             }
         }, 4000);
 
@@ -270,6 +328,54 @@ public class MainActivity extends BaseActivity implements HomeIneractor, OnUserG
                 callsFragment.notifyChange();
                 callsFragment.missedCallAdapter.updateCount();
                 callsFragment.chatAdapter.updateCount();
+            }
+        });
+        userId = userMe.getId();
+
+        setupMenu();
+
+        //If its a url then load it, else Make a text drawable of user's name
+        setProfileImage(usersImage);
+        usersImage.setOnClickListener(this);
+        backImage.setOnClickListener(this);
+        invite.setOnClickListener(this);
+        findViewById(R.id.action_delete).setOnClickListener(this);
+        floatingActionButton.setOnClickListener(this);
+        floatingActionButton.setVisibility(View.VISIBLE);
+
+        fetchContacts();
+        setupViewPager();
+
+        markOnline(true);
+        //  loadAdd();
+
+        FirebaseMessaging.getInstance().getToken().addOnCompleteListener(new OnCompleteListener<String>() {
+            @Override
+            public void onComplete(@NonNull Task<String> task) {
+                if (task.isComplete()) {
+
+                    String token = task.getResult();
+                    Log.i("FCM Token", token);
+                    userMe.setDeviceToken(token);
+                    userMe.setOsType(getString(R.string.osType));
+                    userMe.setTimeStamp(System.currentTimeMillis());
+                    userMe.setOnline(true);
+//                    userMe.setConnect_list(userMe.getConnect_list());
+                    BaseApplication.getUserRef().child(userMe.getId()).setValue(userMe)
+                            .addOnSuccessListener(new OnSuccessListener<Void>() {
+                                @Override
+                                public void onSuccess(Void aVoid) {
+                                    helper.setLoggedInUser(userMe);
+                                }
+                            }).addOnFailureListener(new OnFailureListener() {
+                                @Override
+                                public void onFailure(@NonNull Exception e) {
+
+                                }
+                            });
+
+                }
+
             }
         });
     }
@@ -316,6 +422,7 @@ public class MainActivity extends BaseActivity implements HomeIneractor, OnUserG
         menuRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         menuUsersRecyclerAdapter = new MenuUsersRecyclerAdapter(this, myUsers, helper.getLoggedInUser());
         menuRecyclerView.setAdapter(menuUsersRecyclerAdapter);
+        swipeMenuRecyclerView.setRefreshing(false);
         swipeMenuRecyclerView.setColorSchemeResources(R.color.colorAccent);
         swipeMenuRecyclerView.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
@@ -365,14 +472,71 @@ public class MainActivity extends BaseActivity implements HomeIneractor, OnUserG
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         switch (requestCode) {
             case CONTACTS_REQUEST_CODE:
-                fetchContacts();
+//                fetchContacts();
                 break;
         }
     }
 
-
     private void fetchContacts() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
+        BaseApplication.getUserRef()
+                .addListenerForSingleValueEvent(
+                        new ValueEventListener() {
+                            @Override
+                            public void onDataChange(DataSnapshot dataSnapshot) {
+                                String print = "";
+                                User user;
+                                ArrayList<User> users= new ArrayList<>();
+                                ArrayList<String> connectList = new ArrayList<>();
+                                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                                    try {
+                                        user = snapshot.getValue(User.class);
+                                        if (user.getId() != null){
+
+                                            users.add(user);
+                                            if(user.getId().equals(userMe.getId())){
+                                                connectList.addAll(user.getConnect_list());
+                                            }
+
+                                        }
+
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+
+                                for(int i=0;i<users.size();i++){
+                                    for(int j=0;j<connectList.size();j++){
+                                        try
+                                        {
+                                            if(connectList.get(j).equals(users.get(i).getId())){
+                                                myUsers.add(users.get(i));
+                                                Log.d(TAG, "onDataChange: "+users.get(i).getId());
+
+                                            }
+                                        }catch (Exception e){
+
+                                        }
+                                    }
+                                }
+
+                                setupMenu();
+                                new FetchMyUsersService(MainActivity.this, userMe.getId());
+                                new FirebaseCallService(MainActivity.this, userMe.getId());
+
+                                Log.d(TAG, "onDataChangevalue: "+print);
+
+
+                            }
+
+                            @Override
+                            public void onCancelled(DatabaseError databaseError) {
+
+                            }
+                        });
+
+    }
+    /*private void fetchContacts() {
+        *//*if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
             if (!FetchMyUsersService.STARTED) {
                 if (!swipeMenuRecyclerView.isRefreshing())
                     swipeMenuRecyclerView.setRefreshing(true);
@@ -381,8 +545,8 @@ public class MainActivity extends BaseActivity implements HomeIneractor, OnUserG
             }
         } else {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_CONTACTS}, CONTACTS_REQUEST_CODE);
-        }
-    }
+        }*//*
+    }*/
 
     @Override
     protected void onDestroy() {
@@ -462,20 +626,22 @@ public class MainActivity extends BaseActivity implements HomeIneractor, OnUserG
             value.setNameInPhone(helper.getCacheMyUsers().get(value.getId()).getNameToDisplay());
             addUser(value);
         } else {
-            for (Contact savedContact : contactsData) {
-                if (Helper.contactMatches(value.getId(), savedContact.getPhoneNumber())) {
-                    value.setNameInPhone(savedContact.getName());
+//            for (Contact savedContact : contactsData) {
+//                if (Helper.contactMatches(value.getId(), savedContact.getPhoneNumber())) {
+            for (int i = 0;i<myUsers.size();i++) {
+                    value.setNameInPhone(myUsers.get(i).getName());
                     addUser(value);
                     helper.setCacheMyUsers(myUsers);
                     break;
                 }
-            }
+//            }
         }
     }
 
     @Override
     void groupAdded(Group group) {
         if (!myGroups.contains(group)) {
+            Log.d(TAG, "groupAdded: "+group.getName());
             myGroups.add(group);
             sortMyGroupsByName();
         }
@@ -485,6 +651,7 @@ public class MainActivity extends BaseActivity implements HomeIneractor, OnUserG
     void userUpdated(User value) {
         if (value.getId().equals(userMe.getId())) {
             userMe = value;
+            helper.setLoggedInUser(userMe);
             setProfileImage(usersImage);
         } else if (helper.getCacheMyUsers() != null && helper.getCacheMyUsers().containsKey(value.getId())) {
             value.setNameInPhone(helper.getCacheMyUsers().get(value.getId()).getNameToDisplay());
@@ -541,12 +708,42 @@ public class MainActivity extends BaseActivity implements HomeIneractor, OnUserG
     }
 
     private void addUser(User value) {
-        if (!myUsers.contains(value)) {
-            myUsers.add(value);
+        if (myUsers.contains(value)) {
+            if(!myUsers.contains(value)){
+                myUsers.add(value);
+            }
+
             sortMyUsersByName();
             menuUsersRecyclerAdapter.notifyDataSetChanged();
             refreshUsers(-1);
         }
+
+       /* if (!myUsers.contains(value)) {
+            ArrayList<String> connect_list = new ArrayList<>();
+            if(value.getId().equals(userMe)){
+                for(int i=0;i<value.getConnect_list().size();i++){
+                    connect_list.add(value.getConnect_list().get(i));
+                }
+            }
+            for(int i=0;i<myUsers.size();i++){
+                for(int j=0;j<connect_list.size();j++){
+                    try
+                    {
+                        if(connect_list.get(j).equals(myUsers.get(i).getId())){
+                            myUsers.add(myUsers.get(i));
+                            Log.d(TAG, "onDataChange: "+myUsers.get(i).getId());
+
+                        }
+                    }catch (Exception e){
+
+                    }
+
+                }
+            }
+            sortMyUsersByName();
+            menuUsersRecyclerAdapter.notifyDataSetChanged();
+            refreshUsers(-1);
+        }*/
     }
 
 

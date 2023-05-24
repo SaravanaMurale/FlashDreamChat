@@ -3,6 +3,8 @@ package com.hermes.chat.adapters;
 import android.content.Context;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,6 +24,7 @@ import com.squareup.picasso.Picasso;
 import java.util.ArrayList;
 
 public class CallListAdapter extends RecyclerView.Adapter<CallListAdapter.ViewHolder> implements Filterable {
+    private static final String TAG = "CallListAdapter";
     private Context context;
     private ArrayList<User> myUsers;
     public ArrayList<User> itemsFiltered;
@@ -30,7 +33,7 @@ public class CallListAdapter extends RecyclerView.Adapter<CallListAdapter.ViewHo
     public CallListAdapter(Context context, ArrayList<User> myUsers, User loggedInUser) {
         this.context = context;
         this.myUsers = myUsers;
-        itemsFiltered = myUsers;
+        this.itemsFiltered = myUsers;
         this.userMe = loggedInUser;
     }
 
@@ -82,12 +85,14 @@ public class CallListAdapter extends RecyclerView.Adapter<CallListAdapter.ViewHo
                     .into(viewHolder.userImage);
             viewHolder.myProgressBar.setVisibility(View.GONE);
         }
-        viewHolder.userName.setText(user.getNameInPhone());
+        viewHolder.userName.setText(user.getName());
         viewHolder.status.setText(user.getStatus());
 
         viewHolder.audioCall.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                Log.d(TAG, "onClick: "+user.getDeviceToken());
+                Log.d(TAG, "onClick: "+user.getOsType());
                 ((CallListActivity) context).forwardToRoom("Audio call", false, user);
             }
         });
@@ -119,7 +124,7 @@ public class CallListAdapter extends RecyclerView.Adapter<CallListAdapter.ViewHo
                     filtered = myUsers;
                 } else {
                     for (User user : myUsers) {
-                        if (user.getNameInPhone().toLowerCase().contains(query.toLowerCase())) {
+                        if (user.getName().toLowerCase().contains(query.toLowerCase())) {
                             filtered.add(user);
                         }
                     }
@@ -137,6 +142,13 @@ public class CallListAdapter extends RecyclerView.Adapter<CallListAdapter.ViewHo
                 notifyDataSetChanged();
             }
         };
+    }
+
+    public void updateReceiptsList(ArrayList<User> newlist) {
+        this.itemsFiltered = newlist;
+       /* itemsFiltered.clear();
+        itemsFiltered.addAll(newlist);*/
+        this.notifyDataSetChanged();
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {

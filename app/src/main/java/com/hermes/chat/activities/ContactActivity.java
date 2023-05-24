@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -142,6 +143,11 @@ public class ContactActivity extends BaseActivity implements OnUserGroupItemClic
         searchView = findViewById(R.id.searchView);
         user_name.setText(Helper.getChatData(ContactActivity.this).getLbl_select_contact());
         searchView.setIconified(true);
+
+        EditText searchEditText = searchView.findViewById(androidx.appcompat.R.id.search_src_text);
+        searchEditText.setTextColor(getResources().getColor(R.color.colorIcon));
+        searchEditText.setHint("Search User");
+        searchEditText.setHintTextColor(getResources().getColor(R.color.colorIcon));
        /* ImageView searchIcon = searchView.findViewById(R.id.search_button);
         searchIcon.setImageDrawable(ContextCompat.getDrawable(ContactActivity.this, R.drawable.ic_search_white));
         SearchView.SearchAutoComplete searchAutoComplete =
@@ -153,7 +159,7 @@ public class ContactActivity extends BaseActivity implements OnUserGroupItemClic
         clickListner();
 
         fetchContacts();
-//        setupMenu();
+        setupMenu();
     }
 
     private void clickListner() {
@@ -226,7 +232,7 @@ public class ContactActivity extends BaseActivity implements OnUserGroupItemClic
                                         try {
                                             user = snapshot.getValue(User.class);
                                             if (user.getId() != null){
-
+//                                                users.clear();
                                                 users.add(user);
                                                 if(user.getId().equals(userMe.getId())){
                                                     connectList.addAll(user.getConnect_list());

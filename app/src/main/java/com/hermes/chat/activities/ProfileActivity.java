@@ -11,6 +11,10 @@ import android.os.Build;
 import android.os.Bundle;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.FileProvider;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+
+import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -32,7 +36,9 @@ import com.hermes.chat.models.Contact;
 import com.hermes.chat.models.Group;
 import com.hermes.chat.models.Status;
 import com.hermes.chat.models.User;
+import com.hermes.chat.utils.FileUtils;
 import com.hermes.chat.utils.FirebaseUploader;
+import com.hermes.chat.utils.Helper;
 import com.hermes.chat.utils.KeyboardUtil;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.storage.FirebaseStorage;
@@ -74,10 +80,14 @@ public class ProfileActivity extends BaseActivity implements ImagePickerCallback
     private TextView phoneTitle;
     private TextView userTitle;
 
+    AlertDialog.Builder builder;
+    File image;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
+        builder = new AlertDialog.Builder(this);
         uiInit();
     }
 
@@ -105,14 +115,24 @@ public class ProfileActivity extends BaseActivity implements ImagePickerCallback
         findViewById(R.id.changeProfile).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                CropImage.activity()
+
+                if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.S) {
+                    chooseDialog();
+                }else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
+
+                    chooseDialog();
+
+                } else {
+                    openImageClick();
+                }
+                /*CropImage.activity()
                         .setGuidelines(CropImageView.Guidelines.ON)
                         .setActivityTitle("Profile picture")
                         .setCropShape(CropImageView.CropShape.RECTANGLE)
                         .setCropMenuCropButtonTitle("Done")
                         .setShowCropOverlay(true)
                         .setAllowFlipping(false)
-                        .start(ProfileActivity.this);
+                        .start(ProfileActivity.this);*/
             }
         });
 
@@ -136,6 +156,64 @@ public class ProfileActivity extends BaseActivity implements ImagePickerCallback
                 finish();
             }
         });
+    }
+
+    private void openImageClick()
+    {
+    }
+
+    private void chooseDialog() {
+        builder.setMessage("Choose Image Picking Options") .setTitle("Choose Image")
+                .setCancelable(true)
+                .setPositiveButton("Gallery", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.cancel();
+                        if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.TIRAMISU) {
+                            Intent intent = new Intent(MediaStore.ACTION_PICK_IMAGES);
+                            intent.setType("image/*");
+                            startActivityForResult(intent, 1537);
+                        }
+                        else {
+                            androidRGallery();
+                        }
+
+                    }
+                })
+                .setNegativeButton("Camera", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.cancel();
+
+                        File path = new File(getFilesDir(), "/FlashChat/Camera");
+                        if (!path.exists()) path.mkdirs();
+                        image = new File(path, FileUtils.getFileName());
+                        Uri imageUri = FileProvider.getUriForFile(getApplicationContext(), getString(R.string.authority), image);
+                        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                      /*  Bundle newExtras = new Bundle();
+                        if (imageUri != null) {
+                            newExtras.putParcelable(MediaStore.EXTRA_OUTPUT, imageUri);
+                        } else {
+                            newExtras.putBoolean("return-data", true);
+                        }*/
+                        intent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
+//                        intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                        //intent.putExtra(MediaStore.EXTRA_OUTPUT);
+                       /* if(intent.resolveActivity(getPackageManager()) != null) {
+                            startActivityForResult(intent,
+                                    1515);
+                        }*/
+                        startActivityForResult(intent, 1515);
+                    }
+                });
+        //Creating dialog box
+        AlertDialog alert = builder.create();
+        alert.show();
+    }
+
+    public void androidRGallery() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("image/*");
+        intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        startActivityForResult(intent,1537);
     }
 
     private void setLang() {
@@ -275,6 +353,17 @@ public class ProfileActivity extends BaseActivity implements ImagePickerCallback
                     }
                     cameraPicker.submit(data);
                     break;
+                case 201:
+                    androidRGallery();
+                    break;
+                case 1515:
+                    Log.d("OS_13","IMAGE");
+                    onSelectFromGalleryResult(data,"Camera");
+                    break;
+                case 1537:
+                    Log.d("OS_13","IMAGE");
+                    onSelectFromGalleryResult(data,"Image");
+                    break;
             }
         }
 
@@ -293,6 +382,121 @@ public class ProfileActivity extends BaseActivity implements ImagePickerCallback
             }
         }
     }
+
+    public String getDeviceName() {
+        String manufacturer = Build.MANUFACTURER;
+        String model = Build.MODEL;
+        if (model.toLowerCase().startsWith(manufacturer.toLowerCase())) {
+            return capitalize(model);
+        } else {
+            return capitalize(manufacturer) + " " + model;
+        }
+    }
+
+    private String capitalize(String s) {
+        if (s == null || s.length() == 0) {
+            return "";
+        }
+        char first = s.charAt(0);
+        if (Character.isUpperCase(first)) {
+            return s;
+        } else {
+            return Character.toUpperCase(first) + s.substring(1);
+        }
+    }
+
+    private void onSelectFromGalleryResult(Intent data,String type) {
+        try {
+           Uri uri =null;
+            String path = "";
+            if (data != null || getDeviceName().contains("samsung")) {
+
+//                String path = "";
+
+                if (type.equalsIgnoreCase("Camera")) {
+                    path = image.getAbsolutePath();
+                    uri = Uri.fromFile(new File(path));
+                }else {
+                    uri = data.getData();
+                    path = FileUtils.getRealPathFromURI(this,data.getData());
+                }
+
+                switch (type){
+                    case "Image":
+                    case "Camera":
+                        uploadImage(uri);
+                        break;
+
+                }
+            }else {
+                if (type.equalsIgnoreCase("Camera")) {
+
+                    path = image.getAbsolutePath();
+                    uri = Uri.fromFile(new File(path));
+                    uploadImage(uri);
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private void uploadImage(Uri filePath) {
+
+        userImageUploadTask(filePath, AttachmentTypes.IMAGE, null);
+    }
+
+/*    private void newFileUploadTask(String filePath,
+                                   @AttachmentTypes.AttachmentType final int attachmentType, final Attachment attachment) {
+        if (myAttachmentLLY.getVisibility() == View.VISIBLE) {
+            myAttachmentLLY.setVisibility(View.GONE);
+            //  addAttachment.animate().setDuration(400).rotationBy(-45).start();
+        }
+
+        final File fileToUpload = new File(filePath);
+        final String fileName = Uri.fromFile(fileToUpload).getLastPathSegment();
+
+        Attachment preSendAttachment = attachment;//Create/Update attachment
+        if (preSendAttachment == null) preSendAttachment = new Attachment();
+        preSendAttachment.setName(fileName);
+        preSendAttachment.setBytesCount(fileToUpload.length());
+        preSendAttachment.setUrl("loading");
+        prepareMessage(null, attachmentType, preSendAttachment);
+        String timeFinal="Turn off";
+        if(!userTime.equalsIgnoreCase("Turn off")){
+            timeFinal = userTime;
+        } else if (!time.equalsIgnoreCase("Turn off")){
+            timeFinal = time;
+        } else {
+            timeFinal = userTime;
+        }
+
+        checkAndCopy("/" + getString(R.string.app_name) + "/" +
+                AttachmentTypes.getTypeName(attachmentType) + "/.sent/", fileToUpload);//Make a copy
+
+        Intent intent = new Intent(Helper.UPLOAD_AND_SEND);
+        intent.putExtra("attachment", attachment);
+        intent.putExtra("disappear",timeFinal);
+        intent.putExtra("adminBlk",adminBlocked);
+        if (group != null) {
+            intent.putExtra("chatDataGroup", group);
+        }
+        intent.putExtra("userIds", attachment);
+        intent.putExtra("attachment_type", attachmentType);
+        intent.putExtra("attachment_file_path", filePath);
+        intent.putExtra("attachment_file_path", filePath);
+        intent.putExtra("attachment_recipient_id", userOrGroupId);
+        intent.putExtra("attachment_chat_child", chatChild);
+        intent.putExtra("attachment_reply_id", replyId);
+        intent.putExtra("new_msg_id", newMsgID);
+        intent.putExtra("statusUrl", "");
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+        replyLay.setVisibility(View.GONE);
+        replyId = "0";
+        KeyboardUtil.getInstance(this).closeKeyboard();
+    }*/
 
     @Override
     public void onError(String s) {
