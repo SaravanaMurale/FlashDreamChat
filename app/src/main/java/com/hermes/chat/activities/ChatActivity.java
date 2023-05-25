@@ -397,7 +397,7 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
             finish();//temporary fix
         }
         }catch (Exception e){
-
+            e.printStackTrace();
         }
 
 
@@ -689,7 +689,7 @@ public class ChatActivity extends BaseActivity implements OnMessageItemClick,
     }
 
     private View.OnTouchListener voiceMessageListener = new View.OnTouchListener() {
-        
+
         @Override
         public boolean onTouch(View v, MotionEvent event) {
             Log.d(TAG, "onTouch: ");

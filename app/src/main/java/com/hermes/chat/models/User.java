@@ -11,7 +11,6 @@ import com.google.firebase.database.Exclude;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
 
 import io.realm.RealmList;
 import io.realm.RealmModel;
@@ -54,8 +53,8 @@ public class User implements Parcelable, RealmModel {
     @Exclude
     @Ignore
     @NonNull
-    public RealmList<HashMap<String,String>> disappearing_list = new RealmList<>();
-//    private RealmList<disappear> connectList = new RealmList<>();
+    public RealmList<HashMap<String, String>> disappearing_list = new RealmList<>();
+    //    private RealmList<disappear> connectList = new RealmList<>();
     private String deviceToken = " ";
     private String osType = " ";
     private String username = "";
@@ -75,7 +74,6 @@ public class User implements Parcelable, RealmModel {
     }
 
 
-
     @RequiresApi(api = Build.VERSION_CODES.Q)
     protected User(Parcel in) {
         online = in.readByte() != 0;
@@ -92,10 +90,11 @@ public class User implements Parcelable, RealmModel {
         is_new = in.readInt();
         ArrayList<String> blockedUsersIds = in.createStringArrayList();
         this.blockedUsersIds = new RealmList<>();
-        this.blockedUsersIds.addAll(blockedUsersIds);
+        if (blockedUsersIds != null)
+            this.blockedUsersIds.addAll(blockedUsersIds);
         ArrayList<String> connect_list = in.createStringArrayList();
         this.connectList = new RealmList<>();
-        if(connect_list!=null){
+        if (connect_list != null) {
             this.connectList.addAll(connect_list);
         }
 
@@ -144,7 +143,6 @@ public class User implements Parcelable, RealmModel {
     }
 
 
-
     public User(String id, String name, String status, String image, String deviceToken, String osType,
                 String userName, String password, String email, String webqrcode) {
         this.id = id;
@@ -172,43 +170,35 @@ public class User implements Parcelable, RealmModel {
         return id.equals(user.id);
     }
 
-    public RealmList<HashMap<String,String>> getDisappearing_list()
-    {
+    public RealmList<HashMap<String, String>> getDisappearing_list() {
         return disappearing_list;
     }
 
-    public void setDisappearing_list(ArrayList<HashMap<String,String>> disappearing_list)
-    {
+    public void setDisappearing_list(ArrayList<HashMap<String, String>> disappearing_list) {
         this.disappearing_list.addAll(disappearing_list);
     }
 
-    public RealmList<String> getConnect_list()
-    {
+    public RealmList<String> getConnect_list() {
         return connectList;
     }
 
-    public void setConnect_list(ArrayList<String> connect_list)
-    {
+    public void setConnect_list(ArrayList<String> connect_list) {
         this.connectList.addAll(connect_list);
     }
 
-    public String getDisappearing_message()
-    {
+    public String getDisappearing_message() {
         return disappearing_message;
     }
 
-    public void setDisappearing_message(String disappearing_message)
-    {
+    public void setDisappearing_message(String disappearing_message) {
         this.disappearing_message = disappearing_message;
     }
 
-    public int getIs_new()
-    {
+    public int getIs_new() {
         return is_new;
     }
 
-    public void setIs_new(int is_new)
-    {
+    public void setIs_new(int is_new) {
         this.is_new = is_new;
     }
 
@@ -379,13 +369,11 @@ public class User implements Parcelable, RealmModel {
         this.webqrcode = webqrcode;
     }
 
-    public boolean getAdminblock()
-    {
+    public boolean getAdminblock() {
         return adminblock;
     }
 
-    public void setAdminblock(boolean adminblock)
-    {
+    public void setAdminblock(boolean adminblock) {
         this.adminblock = adminblock;
     }
 

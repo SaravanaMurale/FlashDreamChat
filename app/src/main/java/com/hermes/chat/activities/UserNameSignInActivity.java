@@ -61,7 +61,7 @@ import io.realm.Realm;
 
 public class UserNameSignInActivity extends AppCompatActivity {
 
-    private static final String TAG ="UserNameSignInActivity" ;
+    private static final String TAG = "UserNameSignInActivity";
     @BindView(R.id.title)
     TextView title;
     @BindView(R.id.username)
@@ -93,7 +93,7 @@ public class UserNameSignInActivity extends AppCompatActivity {
         ButterKnife.bind(this);
         Log.d(TAG, "onCreate: created");
         SharedPreferences prefs = getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
-        prefs.edit().putString("LoggedIn","false");
+        prefs.edit().putString("LoggedIn", "false");
         uiInit();
     }
 
@@ -120,7 +120,7 @@ public class UserNameSignInActivity extends AppCompatActivity {
                 .withListener(new MultiplePermissionsListener() {
                     @Override
                     public void onPermissionsChecked(MultiplePermissionsReport report) {
-                        callLang();
+
                     }
 
                     @Override
@@ -145,7 +145,7 @@ public class UserNameSignInActivity extends AppCompatActivity {
         Log.d(TAG, "onViewClicked: ");
         switch (view.getId()) {
             case R.id.btnSubmit:
-                progressDialog.setMessage(Helper.getLoginData(UserNameSignInActivity.this).getLblEnterLoading());
+                progressDialog.setMessage("Loading...");
 //                fetchUsers();
                 validate();
                 break;
@@ -162,10 +162,10 @@ public class UserNameSignInActivity extends AppCompatActivity {
     private void validate() {
         if (username.getText().toString().isEmpty()) {
             Toast.makeText(UserNameSignInActivity.this,
-                    Helper.getLoginData(UserNameSignInActivity.this).getLblUsername(), Toast.LENGTH_SHORT).show();
+                    "Flash Chat User Name", Toast.LENGTH_SHORT).show();
         } else if (password.getText().toString().isEmpty()) {
             Toast.makeText(UserNameSignInActivity.this,
-                    Helper.getLoginData(UserNameSignInActivity.this).getLblPassword(), Toast.LENGTH_SHORT).show();
+                    "Password", Toast.LENGTH_SHORT).show();
         } else {
             progressDialog.show();
             mAuth.signInWithEmailAndPassword(username.getText().toString(), password.getText().toString())
@@ -175,46 +175,36 @@ public class UserNameSignInActivity extends AppCompatActivity {
                                 public void onComplete(
                                         @NonNull Task<AuthResult> task) {
                                     if (task.isSuccessful()) {
-                                        authenticate();
+                                        fetchUsers();
+
                                     } else {
                                         progressDialog.dismiss();
-                                        Toast.makeText(UserNameSignInActivity.this, Helper.
-                                                getLoginData(UserNameSignInActivity.this).getErrUserNotFound(), Toast.LENGTH_SHORT).show();
+                                        Toast.makeText(UserNameSignInActivity.this,
+                                                "This user is not authorized, Please check email and password", Toast.LENGTH_SHORT).show();
                                     }
                                 }
                             });
         }
     }
 
-    private void authenticate(){
-        Log.d(TAG, "users count: "+ users.size());
+    private void authenticate() {
+        Log.d(TAG, "users count: " + users.size());
         for (User item : users) {
-            Log.d(TAG, "validate: "+item.getIs_new()+" user email "+item.getEmail()+" === new "+item.getAdminblock());
-            if(item.getEmail().equals(username.getText().toString().trim())){
-                if(!item.getAdminblock()){
+            Log.d(TAG, "validate: " + item.getIs_new() + " user email " + item.getEmail() + " === new " + item.getAdminblock());
+            if (item.getEmail().equals(username.getText().toString().trim())) {
+                if (!item.getAdminblock()) {
                     isFound = true;
 //                    if (item.getPassword().equals(password.getText().toString())) {
-                        helper.setLoggedInUser(item);
-                        helper.setEmail(item.getEmail());
-                        helper.setUserName(item.getUsername());
-                        helper.setPassword(item.getPassword());
-                        helper.setPhoneNumberForVerification(item.getId());
-                        progressDialog.dismiss();
-                        if(item.getIs_new()==1){
-                            SharedPreferences prefs = getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
-                            prefs.edit().putString("LoggedIn","true").apply();
-                            Intent changePass = new Intent(UserNameSignInActivity.this, ChangePasswordActivity.class);
-                            changePass.putExtra("from", "login");
-                            startActivity(changePass);
-                            finish();
-                        }else {
-                            SharedPreferences prefs = getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
-                            prefs.edit().putString("LoggedIn","true").apply();
-                            startActivity(new Intent(UserNameSignInActivity.this, MainActivity.class));
-                            finish();
-                        }
+                    helper.setLoggedInUser(item);
+                    helper.setEmail(item.getEmail());
+                    helper.setUserName(item.getUsername());
+                    helper.setPassword(item.getPassword());
+                    helper.setPhoneNumberForVerification(item.getId());
+                    progressDialog.dismiss();
+                    callLang(item.getIs_new());
 
-                        return;
+
+                    return;
                     /*} else {
                         progressDialog.dismiss();
                         isFound = false;
@@ -278,8 +268,7 @@ public class UserNameSignInActivity extends AppCompatActivity {
         }
         if (!isFound) {
             progressDialog.dismiss();
-            Toast.makeText(UserNameSignInActivity.this, Helper.
-                    getLoginData(UserNameSignInActivity.this).getErrUserNotFound(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(UserNameSignInActivity.this, "Flash Chat User not found", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -316,7 +305,7 @@ public class UserNameSignInActivity extends AppCompatActivity {
                                     for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                                         try {
                                             User user = snapshot.getValue(User.class);
-                                            if (user.getId() != null){
+                                            if (user.getId() != null) {
                                                 /*if(user.getDisappearing_list()!=null && user.getDisappearing_list().size()>0){
                                                     RealmList<HashMap<String,String>> disappList = new RealmList<>();
                                                     for(int i=0;i<user.getDisappearing_list().size();i++){
@@ -327,15 +316,16 @@ public class UserNameSignInActivity extends AppCompatActivity {
 
                                                 }*/
                                                 users.add(user);
-                                                print = print + "\n" + "user: "+user.getUsername() +"  pass: "+ user.getPassword() + " new "+ user.getIs_new()+" block "+user.getAdminblock();
-                                                Log.d(TAG, "onDataChange: "+print);
+                                                print = print + "\n" + "user: " + user.getUsername() + "  pass: " + user.getPassword() + " new " + user.getIs_new() + " block " + user.getAdminblock();
+                                                Log.d(TAG, "onDataChange: " + print);
                                             }
 
                                         } catch (Exception e) {
                                             e.printStackTrace();
                                         }
                                     }
-                                    Log.d(TAG, "users count: "+users.size());
+                                    authenticate();
+                                    Log.d(TAG, "users count: " + users.size());
 
                                 } catch (Exception e) {
                                     e.printStackTrace();
@@ -351,25 +341,33 @@ public class UserNameSignInActivity extends AppCompatActivity {
         progressDialog.dismiss();
     }
 
-    private void callLang() {
+    private void callLang(int is_new) {
 
 
-                        if (!SessionHandler.getInstance().getBoolean(UserNameSignInActivity.this, LANGUAGE)) {
+        if (!SessionHandler.getInstance().getBoolean(UserNameSignInActivity.this, LANGUAGE)) {
 //                    loadLanguageDialog(items);
-                            setLocale("English-en", "en", 0);
+            setLocale("English-en", "en", 0, is_new);
 
-                } else
-                        {
-
-                            try
-                            {
-                                fetchUsers();
-                            }
-                            catch (Exception e)
-                            {
-                                e.printStackTrace();
-                            }
-                        }
+        } else {
+            try {
+              //  fetchUsers();
+                if (is_new == 1) {
+                    SharedPreferences prefs = getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
+                    prefs.edit().putString("LoggedIn", "true").apply();
+                    Intent changePass = new Intent(UserNameSignInActivity.this, ChangePasswordActivity.class);
+                    changePass.putExtra("from", "login");
+                    startActivity(changePass);
+                    finish();
+                } else {
+                    SharedPreferences prefs = getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
+                    prefs.edit().putString("LoggedIn", "true").apply();
+                    startActivity(new Intent(UserNameSignInActivity.this, MainActivity.class));
+                    finish();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
 
 //        BaseApplication.getLangRef().addListenerForSingleValueEvent(new ValueEventListener() {
 //            @Override
@@ -461,14 +459,14 @@ public class UserNameSignInActivity extends AppCompatActivity {
         }
     }
 
-    public void setLocale(String localeName, String code, int position) {
-        Log.d(TAG, "setLocale: "+localeName+" === "+code+" === "+position);
+    public void setLocale(String localeName, String code, int position, int is_new) {
+        Log.d(TAG, "setLocale: " + localeName + " === " + code + " === " + position);
         pos = position;
         showPDialog();
         SessionHandler.getInstance().saveBoolean(UserNameSignInActivity.this, LANGUAGE, true);
         LocaleUtils.setLocale(new Locale(code));
         LocaleUtils.updateConfigActivity(this, getBaseContext().getResources().getConfiguration());
-        getLanguageData(localeName);
+        getLanguageData(localeName, is_new);
         dismiss();
 
     }
@@ -481,10 +479,10 @@ public class UserNameSignInActivity extends AppCompatActivity {
         LocaleUtils.updateConfigActivity(this, getBaseContext().getResources().getConfiguration());
         if (dialog != null)
             dialog.dismiss();
-        getLanguageData(localeName);
+        //getLanguageData(localeName);
     }
 
-    private void getLanguageData(String localeName) {
+    private void getLanguageData(String localeName, int is_new) {
         showPDialog();
 
         BaseApplication.getLangRef().child(localeName).addListenerForSingleValueEvent(new ValueEventListener() {
@@ -495,16 +493,30 @@ public class UserNameSignInActivity extends AppCompatActivity {
                 LanguageListModel languageListModel = new Gson().fromJson(json, LanguageListModel.class);
                 Helper.setLangInPref(languageListModel, UserNameSignInActivity.this);
                 dismiss();
-                startActivity(new Intent(UserNameSignInActivity.this, helper.getLoggedInUser()
+
+                if (is_new == 1) {
+                    SharedPreferences prefs = getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
+                    prefs.edit().putString("LoggedIn", "true").apply();
+                    Intent changePass = new Intent(UserNameSignInActivity.this, ChangePasswordActivity.class);
+                    changePass.putExtra("from", "login");
+                    startActivity(changePass);
+                    finish();
+                } else {
+                    SharedPreferences prefs = getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
+                    prefs.edit().putString("LoggedIn", "true").apply();
+                    startActivity(new Intent(UserNameSignInActivity.this, MainActivity.class));
+                    finish();
+                }
+               /* startActivity(new Intent(UserNameSignInActivity.this, helper.getLoggedInUser()
                         != null ? MainActivity.class : UserNameSignInActivity.class));
-                finish();
+                finish();*/
 
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
 
-                Log.d(TAG, "onCancelled: "+databaseError);
+                Log.d(TAG, "onCancelled: " + databaseError);
             }
         });
         dismiss();

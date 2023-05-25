@@ -61,7 +61,7 @@ public class LanguageListAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
                 if (splashScreenActivity != null)
                     splashScreenActivity.setLocale(itemsData.get(viewHolder.getAdapterPosition()),
                             itemsData.get(viewHolder.getAdapterPosition()).split("-")[1],
-                            viewHolder.getAdapterPosition());
+                            viewHolder.getAdapterPosition(),0);
                 else if (optionsFragment != null)
                     optionsFragment.setLocale(itemsData.get(viewHolder.getAdapterPosition()),
                             itemsData.get(viewHolder.getAdapterPosition()).split("-")[1]);
