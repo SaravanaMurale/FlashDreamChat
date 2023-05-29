@@ -2,7 +2,9 @@ package com.hermes.chat.activities;
 
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.text.TextUtils;
@@ -102,6 +104,7 @@ public class ChangePasswordActivity extends AppCompatActivity {
     }
 
     private void validate() {
+        SharedPreferences prefs = getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
         if (oldPassword.getText().toString().isEmpty()) {
             Toast.makeText(ChangePasswordActivity.this,
                     Helper.getChangePwd(ChangePasswordActivity.this).getLblEnterCurrentPassowrd(), Toast.LENGTH_SHORT).show();
@@ -117,7 +120,8 @@ public class ChangePasswordActivity extends AppCompatActivity {
         } else if (!newPassword.getText().toString().equals(confirmPassword.getText().toString())) {
             Toast.makeText(ChangePasswordActivity.this,
                     Helper.getChangePwd(ChangePasswordActivity.this).getErrNewConfirmSame(), Toast.LENGTH_SHORT).show();
-        } else if (!oldPassword.getText().toString().equalsIgnoreCase(helper.getPassword())) {
+        } else if (!oldPassword.getText().toString().equalsIgnoreCase(prefs.getString("Password", ""))) {
+
             Toast.makeText(ChangePasswordActivity.this,
                     Helper.getChangePwd(ChangePasswordActivity.this).getErrCurrentNotCorrect(), Toast.LENGTH_SHORT).show();
         } else if (newPassword.getText().toString().length() < 5 || confirmPassword.getText()
@@ -125,6 +129,7 @@ public class ChangePasswordActivity extends AppCompatActivity {
             Toast.makeText(this, "Password must be more than 5",
                     Toast.LENGTH_LONG).show();
         } else {
+
             FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
             if (firebaseUser != null) {
                 firebaseUser.updatePassword(confirmPassword.getText().toString())
@@ -133,6 +138,7 @@ public class ChangePasswordActivity extends AppCompatActivity {
                             @Override
                             public void onComplete(@NonNull Task<Void> task) {
                                 if (task.isSuccessful())
+                                    prefs.edit().putString("Password", confirmPassword.getText().toString()).apply();
                                     updatePassword(confirmPassword.getText().toString());
                             }
                         });
@@ -287,14 +293,14 @@ public class ChangePasswordActivity extends AppCompatActivity {
         try {
             progressDialog.show();
             User user = helper.getLoggedInUser();
-            user.setPassword(password);
+//            user.setPassword(password);
             user.setIs_new(0);
             BaseApplication.getUserRef().child(helper.getPhoneNumberForVerification()).
                     setValue(user)
                     .addOnSuccessListener(new OnSuccessListener<Void>() {
                         @Override
                         public void onSuccess(Void aVoid) {
-                            helper.setPassword(password);
+//                            helper.setPassword(password);
                             helper.setIsNew(0);
                             helper.setLoggedInUser(user);
                             progressDialog.dismiss();

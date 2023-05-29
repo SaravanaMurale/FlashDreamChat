@@ -198,7 +198,7 @@ public class UserNameSignInActivity extends AppCompatActivity {
                     helper.setLoggedInUser(item);
                     helper.setEmail(item.getEmail());
                     helper.setUserName(item.getUsername());
-                    helper.setPassword(item.getPassword());
+//                    helper.setPassword(item.getPassword());
                     helper.setPhoneNumberForVerification(item.getId());
                     progressDialog.dismiss();
                     callLang(item.getIs_new());
@@ -354,6 +354,7 @@ public class UserNameSignInActivity extends AppCompatActivity {
                 if (is_new == 1) {
                     SharedPreferences prefs = getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
                     prefs.edit().putString("LoggedIn", "true").apply();
+                    prefs.edit().putString("Password", password.getText().toString()).apply();
                     Intent changePass = new Intent(UserNameSignInActivity.this, ChangePasswordActivity.class);
                     changePass.putExtra("from", "login");
                     startActivity(changePass);
@@ -361,6 +362,7 @@ public class UserNameSignInActivity extends AppCompatActivity {
                 } else {
                     SharedPreferences prefs = getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
                     prefs.edit().putString("LoggedIn", "true").apply();
+                    prefs.edit().putString("Password", password.getText().toString()).apply();
                     startActivity(new Intent(UserNameSignInActivity.this, MainActivity.class));
                     finish();
                 }
@@ -497,6 +499,7 @@ public class UserNameSignInActivity extends AppCompatActivity {
                 if (is_new == 1) {
                     SharedPreferences prefs = getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
                     prefs.edit().putString("LoggedIn", "true").apply();
+                    prefs.edit().putString("Password", password.getText().toString()).apply();
                     Intent changePass = new Intent(UserNameSignInActivity.this, ChangePasswordActivity.class);
                     changePass.putExtra("from", "login");
                     startActivity(changePass);
@@ -504,6 +507,7 @@ public class UserNameSignInActivity extends AppCompatActivity {
                 } else {
                     SharedPreferences prefs = getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
                     prefs.edit().putString("LoggedIn", "true").apply();
+                    prefs.edit().putString("Password", password.getText().toString()).apply();
                     startActivity(new Intent(UserNameSignInActivity.this, MainActivity.class));
                     finish();
                 }
