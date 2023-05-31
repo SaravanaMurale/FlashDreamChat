@@ -80,8 +80,13 @@ public class SplashActivity extends AppCompatActivity {
                 /*HashMap<Object, Object> list = new HashMap<>();
                 list = (HashMap<Object, Object>) dataSnapshot.getValue();
                 List<String> items = new ArrayList<>();*/
-                SharedPreferences prefs = getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
-                prefs.edit().putString("appId", dataSnapshot.getValue().toString()).apply();
+                try{
+                    SharedPreferences prefs = getSharedPreferences(String.valueOf(R.string.app_name), Context.MODE_PRIVATE);
+                    prefs.edit().putString("appId", dataSnapshot.getValue().toString()).apply();
+                } catch (Exception e){
+
+                }
+
             }
 
             @Override
